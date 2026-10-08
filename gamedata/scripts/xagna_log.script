@@ -11,6 +11,8 @@ local log_level = LEVELS.WARN
 local buffer = {}
 local log_path
 local log_started = false
+local last_body, last_level, last_label
+local repeat_count = 0
 
 --- Sets the log threshold from a level name; an unknown name falls back to WARN.
 function set_log_level(name)
@@ -29,8 +31,17 @@ local function get_log_path()
     return log_path
 end
 
+--- Collapses a run of identical consecutive lines into one "ROW(N times)" summary, so a single
+--- repeated trace cannot flood the log. Mirrors xlibs xlog's deadband (xlog.script:252-262).
+local function flush_repeat()
+    if repeat_count == 0 then return end
+    buffer[#buffer + 1] = string.format("[%s][%s] ROW(%d times)", os.date("%H:%M:%S"), last_label, repeat_count)
+    repeat_count = 0
+end
+
 --- Writes the buffered lines to xagna.log in one open, then clears the buffer.
 function flush_log()
+    flush_repeat()
     if #buffer == 0 then return end
     local file = io.open(get_log_path(), log_started and "a" or "w")
     if not file then return end
@@ -44,7 +55,16 @@ end
 local function emit(level, label, fmt, ...)
     if level > log_level then return end
     local ok, msg = pcall(string.format, fmt, ...)
-    buffer[#buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, ok and msg or fmt)
+    local body = ok and msg or fmt
+    -- Deadband: a line identical to the one just written is counted, not re-written; the count
+    -- is emitted as one summary when the next distinct line (or a flush) arrives.
+    if body == last_body and level == last_level then
+        repeat_count = repeat_count + 1
+        return
+    end
+    flush_repeat()
+    last_body, last_level, last_label = body, level, label
+    buffer[#buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, body)
     -- Flush on a warning or once the buffer fills, so a DEBUG trace flood cannot grow memory between flush points.
     if level <= LEVELS.WARN or #buffer >= 300 then flush_log() end
 end

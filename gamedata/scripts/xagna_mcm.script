@@ -1,8 +1,16 @@
 --- xagna_mcm: the MCM log-level control and the config reader.
 
+local RegisterScriptCallback = RegisterScriptCallback
+
 local function get_config(key)
     if not ui_mcm then return nil end
     return ui_mcm.get("xagna/" .. key)
+end
+
+local function apply_log_level()
+    local name = get_config("log_level") or "WARN"
+    xagna_log.set_log_level(name)
+    xagna_log.log_info("log level = %s", name)
 end
 
 function on_mcm_load()
@@ -23,5 +31,7 @@ function on_mcm_load()
 end
 
 function on_game_start()
-    xagna_log.set_log_level(get_config("log_level") or "WARN")
+    apply_log_level()
+    RegisterScriptCallback("on_option_change", apply_log_level)
+    RegisterScriptCallback("mcm_option_restore_default", apply_log_level)
 end
