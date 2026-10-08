@@ -1,7 +1,5 @@
 --- xagna_core: data for the additive companion -- kept animation entries, PDA into-patches, and standing-posture deltas.
 
-local getFS, io, os, pcall, string, table = getFS, io, os, pcall, string, table
-
 local PROP_ONESHOT = { maxidle = 1, sumidle = 1, rnd = 100 }
 local PROP_WOUNDED = { maxidle = 5, sumidle = 10, rnd = 70 }
 local PROP_PUNCH   = { maxidle = 5, sumidle = 2, rnd = 100 }
@@ -10,61 +8,6 @@ local PDA_DRAW = { "norm_torso_pda_draw_1", "norm_torso_pda_idle_1", "norm_torso
 
 local function punch_slot(index)
     return { "free_facer_" .. index, { f = xr_effects.actor_punch }, "free_facer_" .. index, { f = xr_effects.clearAbuse } }
-end
-
-local LEVELS = { ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 }
-local log_level = LEVELS.WARN
-local buffer = {}
-local log_path
-local log_started = false
-
---- Sets the log threshold from a level name; an unknown name falls back to WARN.
-function set_log_level(name)
-    log_level = LEVELS[name] or LEVELS.WARN
-end
-
---- True when the log level is DEBUG, so callers skip building trace strings when tracing is off.
-function is_debug()
-    return log_level >= LEVELS.DEBUG
-end
-
-local function get_log_path()
-    if not log_path then
-        log_path = getFS():update_path("$logs$", "") .. "xagna.log"
-    end
-    return log_path
-end
-
---- Writes the buffered lines to xagna.log in one open, then clears the buffer.
-function flush_log()
-    if #buffer == 0 then return end
-    local file = io.open(get_log_path(), log_started and "a" or "w")
-    if not file then return end
-    file:write(table.concat(buffer, "\n") .. "\n")
-    file:flush()
-    file:close()
-    buffer = {}
-    log_started = true
-end
-
-local function emit(level, label, fmt, ...)
-    if level > log_level then return end
-    local ok, msg = pcall(string.format, fmt, ...)
-    buffer[#buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, ok and msg or fmt)
-    -- Flush on a warning or once the buffer fills, so a DEBUG trace flood cannot grow memory between flush points.
-    if level <= LEVELS.WARN or #buffer >= 300 then flush_log() end
-end
-
-function log_warn(fmt, ...)
-    emit(LEVELS.WARN, "WARN", fmt, ...)
-end
-
-function log_info(fmt, ...)
-    emit(LEVELS.INFO, "INFO", fmt, ...)
-end
-
-function log_debug(fmt, ...)
-    emit(LEVELS.DEBUG, "DEBUG", fmt, ...)
 end
 
 --- Whole animation-list entries kept verbatim from xAGNA (swaps that change the motion, not the action).

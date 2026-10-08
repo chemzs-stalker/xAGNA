@@ -56,22 +56,22 @@ function eva_xagna_pda_idle:evaluate()
     local tg = time_global()
     if st.next_check and tg < st.next_check then return false end
     st.next_check = tg + CHECK_EVERY_MS
-    local dbg = xagna_core.is_debug()
+    local dbg = xagna_log.is_debug()
     if st.cooldown and tg < st.cooldown then
-        if dbg then xagna_core.log_debug("[pda] id=%d skip=cooldown", self.object:id()) end
+        if dbg then xagna_log.log_debug("[pda] id=%d skip=cooldown", self.object:id()) end
         return false
     end
     local reason = get_skip_reason(self.object)
     if reason then
-        if dbg then xagna_core.log_debug("[pda] id=%d skip=%s", self.object:id(), reason) end
+        if dbg then xagna_log.log_debug("[pda] id=%d skip=%s", self.object:id(), reason) end
         return false
     end
     if math_random(100) > ROLL_CHANCE then
-        if dbg then xagna_core.log_debug("[pda] id=%d skip=roll chance=%d", self.object:id(), ROLL_CHANCE) end
+        if dbg then xagna_log.log_debug("[pda] id=%d skip=roll chance=%d", self.object:id(), ROLL_CHANCE) end
         return false
     end
     st.active = true
-    if dbg then xagna_core.log_debug("[pda] id=%d pick hold=%dms", self.object:id(), HOLD_MS) end
+    if dbg then xagna_log.log_debug("[pda] id=%d pick hold=%dms", self.object:id(), HOLD_MS) end
     return true
 end
 
@@ -87,7 +87,7 @@ function act_xagna_pda_idle:initialize()
     -- No fast_set: the draw-in and the holster-out must play (fast_set skips both).
     state_mgr.set_state(npc, PDA_STATE, nil, nil, nil, nil)
     self.st.until_ms = time_global() + HOLD_MS
-    if xagna_core.is_debug() then xagna_core.log_debug("[pda] id=%d draw state=%s", npc:id(), PDA_STATE) end
+    if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d draw state=%s", npc:id(), PDA_STATE) end
 end
 function act_xagna_pda_idle:execute()
     action_base.execute(self)
@@ -98,19 +98,19 @@ function act_xagna_pda_idle:execute()
     local reason = get_skip_reason(npc)
     local tg = time_global()
     local expired = tg > self.st.until_ms
-    local dbg = xagna_core.is_debug()
+    local dbg = xagna_log.is_debug()
     if expired or reason then
-        if dbg then xagna_core.log_debug("[pda] id=%d release=%s", npc:id(), expired and "held" or reason) end
+        if dbg then xagna_log.log_debug("[pda] id=%d release=%s", npc:id(), expired and "held" or reason) end
         self.st.active = false
     elseif dbg then
-        xagna_core.log_debug("[pda] id=%d hold left=%dms", npc:id(), self.st.until_ms - tg)
+        xagna_log.log_debug("[pda] id=%d hold left=%dms", npc:id(), self.st.until_ms - tg)
     end
 end
 function act_xagna_pda_idle:finalize()
     action_base.finalize(self)
     self.st.active = false
     self.st.cooldown = time_global() + COOLDOWN_MS
-    if xagna_core.is_debug() then xagna_core.log_debug("[pda] id=%d done cooldown=%dms", self.object:id(), COOLDOWN_MS) end
+    if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d done cooldown=%dms", self.object:id(), COOLDOWN_MS) end
 end
 
 function setup_generic_scheme(npc, ini, scheme, section, stype, temp)
@@ -135,7 +135,7 @@ function add_to_binder(npc, ini, scheme, section, storage, temp)
     temp.action:add_precondition(world_property(EVAID, true))
     temp.action:add_effect(world_property(EVAID, false))
     manager:add_action(ACTID, temp.action)
-    if xagna_core.is_debug() then xagna_core.log_debug("[pda] id=%d bound", npc:id()) end
+    if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d bound", npc:id()) end
 end
 
 function configure_actions(npc, ini, scheme, section, stype, temp)
@@ -160,6 +160,6 @@ end
 function on_game_start()
     if LoadScheme then
         LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", stype_stalker)
-        if xagna_core.is_debug() then xagna_core.log_debug("[pda] scheme registered") end
+        if xagna_log.is_debug() then xagna_log.log_debug("[pda] scheme registered") end
     end
 end

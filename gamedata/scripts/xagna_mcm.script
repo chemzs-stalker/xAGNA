@@ -1,7 +1,5 @@
 --- xagna_mcm: the MCM log-level control and the config reader.
 
-local RegisterScriptCallback = RegisterScriptCallback
-
 local function get_config(key)
     if not ui_mcm then return nil end
     return ui_mcm.get("xagna/" .. key)
@@ -24,24 +22,6 @@ function on_mcm_load()
     }
 end
 
-local FLUSH_PERIOD_SEC = 60
-
---- Re-arming time event: flushes buffered log lines to disk every FLUSH_PERIOD_SEC so DEBUG
---- traces reach the file promptly for live tailing, not only on save or a level change. The
---- flush is a no-op when the buffer is empty, so when tracing is off this costs nothing but the tick.
-local function flush_tick()
-    ResetTimeEvent("xagna_log", "flush", FLUSH_PERIOD_SEC)
-    xagna_core.flush_log()
-end
-
-local function start_flush_timer()
-    RemoveTimeEvent("xagna_log", "flush")
-    CreateTimeEvent("xagna_log", "flush", FLUSH_PERIOD_SEC, flush_tick)
-end
-
 function on_game_start()
-    xagna_core.set_log_level(get_config("log_level") or "WARN")
-    RegisterScriptCallback("save_state", xagna_core.flush_log)
-    RegisterScriptCallback("on_before_level_changing", xagna_core.flush_log)
-    RegisterScriptCallback("actor_on_first_update", start_flush_timer)
+    xagna_log.set_log_level(get_config("log_level") or "WARN")
 end
