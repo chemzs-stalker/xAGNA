@@ -96,12 +96,14 @@ function act_xagna_pda_idle:execute()
     -- which plays the holster-out and detaches the prop.
     local npc = self.object
     local reason = get_skip_reason(npc)
-    local expired = time_global() > self.st.until_ms
+    local tg = time_global()
+    local expired = tg > self.st.until_ms
+    local dbg = xagna_core.is_debug()
     if expired or reason then
-        if xagna_core.is_debug() then
-            xagna_core.log_debug("[pda] id=%d release=%s", npc:id(), expired and "held" or reason)
-        end
+        if dbg then xagna_core.log_debug("[pda] id=%d release=%s", npc:id(), expired and "held" or reason) end
         self.st.active = false
+    elseif dbg then
+        xagna_core.log_debug("[pda] id=%d hold left=%dms", npc:id(), self.st.until_ms - tg)
     end
 end
 function act_xagna_pda_idle:finalize()

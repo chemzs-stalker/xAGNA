@@ -51,7 +51,8 @@ local function emit(level, label, fmt, ...)
     if level > log_level then return end
     local ok, msg = pcall(string.format, fmt, ...)
     buffer[#buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, ok and msg or fmt)
-    if level <= LEVELS.WARN then flush_log() end
+    -- Flush on a warning or once the buffer fills, so a DEBUG trace flood cannot grow memory between flush points.
+    if level <= LEVELS.WARN or #buffer >= 300 then flush_log() end
 end
 
 function log_warn(fmt, ...)
