@@ -23,6 +23,11 @@ function set_log_level(name)
     log_level = LEVELS[name] or LEVELS.WARN
 end
 
+--- True when the log level is DEBUG, so callers skip building trace strings when tracing is off.
+function is_debug()
+    return log_level >= LEVELS.DEBUG
+end
+
 local function get_log_path()
     if not log_path then
         log_path = getFS():update_path("$logs$", "") .. "xagna.log"
@@ -125,25 +130,19 @@ function get_keep_entries()
             idle = { [0] = "wounded_idle_0_new" },
             rnd  = nil,
         },
+        xagna_use_pda = {
+            prop = PROP_ONESHOT,
+            into = { [0] = { { a = "device_pda" }, PDA_DRAW[1] } },
+            idle = { [0] = PDA_DRAW[2] },
+            out  = { [0] = { PDA_DRAW[3], { d = "device_pda" } } },
+            rnd  = nil,
+        },
     }
 end
 
 --- Into/out overlays for states whose vanilla into was empty, so the PDA draw is added without wiping idle/rnd.
 function get_into_patches()
     return {
-        idle = {
-            into = {
-                [0]  = { "idle_1_idle_0", { a = "device_pda" }, PDA_DRAW[1], PDA_DRAW[2], PDA_DRAW[3], { d = "device_pda" } },
-                [1]  = { "idle_1_idle_0", "idle_1_idle_2", "idle_1_idle_3", "idle_1_idle_4" },
-                [2]  = { "idle_2_idle_0", "idle_2_idle_2", "idle_2_idle_3", "idle_2_idle_4" },
-                [3]  = { "idle_3_idle_0", "idle_3_idle_2", "idle_3_idle_3", "idle_3_idle_4" },
-                [4]  = { "idle_4_idle_0", "idle_4_idle_2", "idle_4_idle_3", "idle_4_idle_4" },
-                [8]  = { "idle_8_idle_0", "idle_8_idle_2", "idle_8_idle_3", "idle_8_idle_4" },
-                [9]  = { "idle_9_idle_0", "idle_9_idle_2", "idle_9_idle_3", "idle_9_idle_4" },
-                [10] = { "idle_10_idle_0", "idle_10_idle_2", "idle_10_idle_3", "idle_10_idle_4" },
-            },
-            out = { [0] = { { d = "device_pda" } } },
-        },
         choosing = {
             into = { [0] = { { a = "device_pda" }, PDA_DRAW[1], PDA_DRAW[2], PDA_DRAW[3], { d = "device_pda" } } },
             out  = { [0] = { { d = "device_pda" } } },
@@ -178,5 +177,20 @@ function get_posture_deltas()
         wounded_heavy   = upright_armed,
         wounded_heavy_2 = upright_armed,
         wounded_zombie  = upright_armed,
+    }
+end
+
+--- New full-body states this mod adds (not vanilla): the standing PDA-use state the idle scheme drives.
+function get_added_states()
+    return {
+        xagna_use_pda = {
+            weapon    = "strapped",
+            movement  = move.stand,
+            mental    = anim.free,
+            bodystate = move.standing,
+            animstate = nil,
+            direction = nil,
+            animation = "xagna_use_pda",
+        },
     }
 end

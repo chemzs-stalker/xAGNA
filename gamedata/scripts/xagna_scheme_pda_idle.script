@@ -1,0 +1,163 @@
+--- xagna_scheme_pda_idle: a generic parallel scheme that has an idle, stationary,
+--- out-of-combat NPC occasionally pull out a PDA, look at it, and put it away.
+--- It drives the additive xagna_use_pda state (xagna_core) through a GOAP plug that
+--- yields the instant danger appears. Pattern: the demonized generic GOAP plug,
+--- documented in doc/library/modding/state-lib-animations.md.
+--- Every decision traces to xagna.log at DEBUG, and is a no-op below it.
+
+local math_random, time_global = math.random, time_global
+local get_object_squad = get_object_squad
+
+-- GOAP id for this scheme. Must not collide: 188114 campfire, 188124 limping/healing,
+-- 188200 Useful Idiots surge-shelter, 188347 xgraft, 198123 gestures.
+local ACTID = 188501
+local EVAID = 188501
+evaid = EVAID
+actid = ACTID
+
+-- Tunables (safe to change).
+local ACTOR_RADIUS_SQR = 50 * 50   -- only fire near the player, so the NPC stays online for the whole draw/holster
+local COOLDOWN_MS      = 180000    -- minimum gap between PDA checks on one NPC
+local ROLL_CHANCE      = 15        -- percent chance per eligibility window
+local CHECK_EVERY_MS   = 5000      -- evaluator early-out between real checks (keeps the evaluator cheap)
+local HOLD_MS          = 6000      -- how long the NPC holds the PDA before putting it away
+
+local PDA_STATE = "xagna_use_pda"
+
+local function is_companion(npc)
+    local squad = get_object_squad(npc)
+    return squad ~= nil and axr_companions.companion_squads[squad.id] ~= nil
+end
+
+--- Returns nil when the NPC may pull out a PDA, else the reason it is skipped (for tracing).
+local function get_skip_reason(npc)
+    if not npc:alive() then return "dead" end
+    if IsWounded(npc) then return "wounded" end
+    if npc:best_enemy() then return "enemy" end
+    if xr_danger.has_danger(npc) then return "danger" end
+    if npc:mental_state() ~= anim.free then return "mental" end
+    if npc:movement_type() ~= move.stand then return "moving" end
+    if npc:body_state() ~= move.standing then return "crouch" end
+    if npc:in_smart_cover() then return "smart_cover" end
+    local actor = db.actor
+    if not actor then return "no_actor" end
+    if actor:position():distance_to_sqr(npc:position()) > ACTOR_RADIUS_SQR then return "far" end
+    if is_companion(npc) then return "companion" end
+    return nil
+end
+
+class "eva_xagna_pda_idle" (property_evaluator)
+function eva_xagna_pda_idle:__init(npc, name, storage) super(nil, name)
+    self.st = storage
+end
+function eva_xagna_pda_idle:evaluate()
+    local st = self.st
+    if st.active then return true end
+    local tg = time_global()
+    if st.next_check and tg < st.next_check then return false end
+    st.next_check = tg + CHECK_EVERY_MS
+    local dbg = xagna_core.is_debug()
+    if st.cooldown and tg < st.cooldown then
+        if dbg then xagna_core.log_debug("[pda] id=%d skip=cooldown", self.object:id()) end
+        return false
+    end
+    local reason = get_skip_reason(self.object)
+    if reason then
+        if dbg then xagna_core.log_debug("[pda] id=%d skip=%s", self.object:id(), reason) end
+        return false
+    end
+    if math_random(100) > ROLL_CHANCE then
+        if dbg then xagna_core.log_debug("[pda] id=%d skip=roll chance=%d", self.object:id(), ROLL_CHANCE) end
+        return false
+    end
+    st.active = true
+    if dbg then xagna_core.log_debug("[pda] id=%d pick hold=%dms", self.object:id(), HOLD_MS) end
+    return true
+end
+
+class "act_xagna_pda_idle" (action_base)
+function act_xagna_pda_idle:__init(npc, name, storage) super(nil, name)
+    self.st = storage
+end
+function act_xagna_pda_idle:initialize()
+    action_base.initialize(self)
+    local npc = self.object
+    npc:set_desired_position()
+    npc:set_desired_direction()
+    -- No fast_set: the draw-in and the holster-out must play (fast_set skips both).
+    state_mgr.set_state(npc, PDA_STATE, nil, nil, nil, nil)
+    self.st.until_ms = time_global() + HOLD_MS
+    if xagna_core.is_debug() then xagna_core.log_debug("[pda] id=%d draw state=%s", npc:id(), PDA_STATE) end
+end
+function act_xagna_pda_idle:execute()
+    action_base.execute(self)
+    -- When the hold elapses or eligibility is lost, release. The evaluator then goes false,
+    -- the planner reclaims the NPC, and its idle brain transitions out of xagna_use_pda,
+    -- which plays the holster-out and detaches the prop.
+    local npc = self.object
+    local reason = get_skip_reason(npc)
+    local expired = time_global() > self.st.until_ms
+    if expired or reason then
+        if xagna_core.is_debug() then
+            xagna_core.log_debug("[pda] id=%d release=%s", npc:id(), expired and "held" or reason)
+        end
+        self.st.active = false
+    end
+end
+function act_xagna_pda_idle:finalize()
+    action_base.finalize(self)
+    self.st.active = false
+    self.st.cooldown = time_global() + COOLDOWN_MS
+    if xagna_core.is_debug() then xagna_core.log_debug("[pda] id=%d done cooldown=%dms", self.object:id(), COOLDOWN_MS) end
+end
+
+function setup_generic_scheme(npc, ini, scheme, section, stype, temp)
+    xr_logic.assign_storage_and_bind(npc, ini, "xagna_pda_idle", section, temp)
+end
+
+function add_to_binder(npc, ini, scheme, section, storage, temp)
+    if not npc then return end
+    local manager = npc:motivation_action_manager()
+    if not manager then return end
+    if not npc:alive() then
+        manager:add_evaluator(EVAID, property_evaluator_const(false))
+        temp.needs_configured = false
+        return
+    end
+    local evaluator = eva_xagna_pda_idle(npc, "eva_xagna_pda_idle", storage)
+    temp.action = act_xagna_pda_idle(npc, "act_xagna_pda_idle", storage)
+    if not evaluator or not temp.action then return end
+    manager:add_evaluator(EVAID, evaluator)
+    temp.action:add_precondition(world_property(stalker_ids.property_alive, true))
+    temp.action:add_precondition(world_property(stalker_ids.property_danger, false))
+    temp.action:add_precondition(world_property(EVAID, true))
+    temp.action:add_effect(world_property(EVAID, false))
+    manager:add_action(ACTID, temp.action)
+    if xagna_core.is_debug() then xagna_core.log_debug("[pda] id=%d bound", npc:id()) end
+end
+
+function configure_actions(npc, ini, scheme, section, stype, temp)
+    if not npc then return end
+    local manager = npc:motivation_action_manager()
+    if not manager or not temp.action then return end
+    -- Block the full idle/combat/danger action set so the plug owns the NPC while active
+    -- and the planners reclaim it the moment the evaluator returns false.
+    local blocked = {
+        xr_danger.actid,
+        stalker_ids.action_combat_planner,
+        stalker_ids.action_danger_planner,
+        xr_actions_id.state_mgr + 2,
+        xr_actions_id.alife,
+    }
+    for i = 1, #blocked do
+        local a = manager:action(blocked[i])
+        if a then a:add_precondition(world_property(EVAID, false)) end
+    end
+end
+
+function on_game_start()
+    if LoadScheme then
+        LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", stype_stalker)
+        if xagna_core.is_debug() then xagna_core.log_debug("[pda] scheme registered") end
+    end
+end

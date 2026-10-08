@@ -65,9 +65,25 @@ local function apply_posture_edits()
     return count
 end
 
+local function apply_added_states()
+    if not state_lib or not state_lib.states then
+        xagna_core.log_warn("state_lib absent, added states skipped")
+        return 0
+    end
+    local states = state_lib.states
+    local count = 0
+    for name, def in pairs(xagna_core.get_added_states()) do
+        states[name] = def
+        xagna_core.log_debug("state %s added", name)
+        count = count + 1
+    end
+    return count
+end
+
 function on_game_start()
     local animations = apply_animation_edits()
     local postures = apply_posture_edits()
-    xagna_core.log_info("game start: %s animation entries, %s postures applied", animations, postures)
+    local added = apply_added_states()
+    xagna_core.log_info("game start: %s animation entries, %s postures, %s states applied", animations, postures, added)
     xagna_core.flush_log()
 end
