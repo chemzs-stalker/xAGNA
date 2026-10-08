@@ -1,6 +1,4 @@
---- xagna_log: the leveled logger for the xAGNA scripts. Buffers to xagna.log and flushes on a
---- cadence, on a warning, once the buffer fills, and on save / level change. is_debug() lets
---- callers skip building trace strings when the level is below DEBUG, so tracing is a no-op then.
+--- xagna_log: leveled logger for the xAGNA scripts; buffers to xagna.log and flushes on a cadence.
 
 local getFS, io, os, pcall, string, table = getFS, io, os, pcall, string, table
 local RegisterScriptCallback = RegisterScriptCallback
@@ -31,8 +29,7 @@ local function get_log_path()
     return log_path
 end
 
---- Collapses a run of identical consecutive lines into one "ROW(N times)" summary, so a single
---- repeated trace cannot flood the log. Mirrors xlibs xlog's deadband (xlog.script:252-262).
+--- Collapses a run of identical consecutive lines into one ROW(N times) summary.
 local function flush_repeat()
     if repeat_count == 0 then return end
     buffer[#buffer + 1] = string.format("[%s][%s] ROW(%d times)", os.date("%H:%M:%S"), last_label, repeat_count)
@@ -56,8 +53,6 @@ local function emit(level, label, fmt, ...)
     if level > log_level then return end
     local ok, msg = pcall(string.format, fmt, ...)
     local body = ok and msg or fmt
-    -- Deadband: a line identical to the one just written is counted, not re-written; the count
-    -- is emitted as one summary when the next distinct line (or a flush) arrives.
     if body == last_body and level == last_level then
         repeat_count = repeat_count + 1
         return
@@ -65,7 +60,6 @@ local function emit(level, label, fmt, ...)
     flush_repeat()
     last_body, last_level, last_label = body, level, label
     buffer[#buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, body)
-    -- Flush on a warning or once the buffer fills, so a DEBUG trace flood cannot grow memory between flush points.
     if level <= LEVELS.WARN or #buffer >= 300 then flush_log() end
 end
 
@@ -81,9 +75,7 @@ function log_debug(fmt, ...)
     emit(LEVELS.DEBUG, "DEBUG", fmt, ...)
 end
 
---- Re-arming time event: flushes buffered lines to disk every FLUSH_PERIOD_SEC so DEBUG traces
---- reach the file for live tailing, not only on save or a level change. The flush is a no-op on
---- an empty buffer, so it costs only the tick when tracing is off.
+--- Re-arming flush timer: writes buffered lines to disk every FLUSH_PERIOD_SEC for live tailing.
 local function flush_tick()
     ResetTimeEvent("xagna_log", "flush", FLUSH_PERIOD_SEC)
     flush_log()

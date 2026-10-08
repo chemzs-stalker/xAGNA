@@ -1,26 +1,18 @@
---- xagna_scheme_pda_idle: a generic parallel scheme that has an idle, stationary,
---- out-of-combat NPC occasionally pull out a PDA, look at it, and put it away.
---- It drives the additive xagna_use_pda state (xagna_core) through a GOAP plug that
---- yields the instant danger appears. Pattern: the demonized generic GOAP plug,
---- documented in doc/library/modding/state-lib-animations.md.
---- Every decision traces to xagna.log at DEBUG, and is a no-op below it.
+--- xagna_scheme_pda_idle: parallel GOAP scheme; an idle, calm, out-of-combat NPC draws a PDA and yields to danger.
 
 local math_random, time_global = math.random, time_global
 local get_object_squad = get_object_squad
 
--- GOAP id for this scheme. Must not collide: 188114 campfire, 188124 limping/healing,
--- 188200 Useful Idiots surge-shelter, 188347 xgraft, 198123 gestures.
 local ACTID = 188501
 local EVAID = 188501
 evaid = EVAID
 actid = ACTID
 
--- Tunables (safe to change).
-local ACTOR_RADIUS_SQR = 50 * 50   -- only fire near the player, so the NPC stays online for the whole draw/holster
-local COOLDOWN_MS      = 180000    -- minimum gap between PDA checks on one NPC
-local ROLL_CHANCE      = 15        -- percent chance per eligibility window
-local CHECK_EVERY_MS   = 5000      -- evaluator early-out between real checks (keeps the evaluator cheap)
-local HOLD_MS          = 6000      -- how long the NPC holds the PDA before putting it away
+local ACTOR_RADIUS_SQR = 50 * 50
+local COOLDOWN_MS      = 180000
+local ROLL_CHANCE      = 15
+local CHECK_EVERY_MS   = 5000
+local HOLD_MS          = 6000
 
 local PDA_STATE = "xagna_use_pda"
 
@@ -84,16 +76,12 @@ function act_xagna_pda_idle:initialize()
     local npc = self.object
     npc:set_desired_position()
     npc:set_desired_direction()
-    -- No fast_set: the draw-in and the holster-out must play (fast_set skips both).
     state_mgr.set_state(npc, PDA_STATE, nil, nil, nil, nil)
     self.st.until_ms = time_global() + HOLD_MS
     if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d draw state=%s", npc:id(), PDA_STATE) end
 end
 function act_xagna_pda_idle:execute()
     action_base.execute(self)
-    -- When the hold elapses or eligibility is lost, release. The evaluator then goes false,
-    -- the planner reclaims the NPC, and its idle brain transitions out of xagna_use_pda,
-    -- which plays the holster-out and detaches the prop.
     local npc = self.object
     local reason = get_skip_reason(npc)
     local expired = time_global() > self.st.until_ms
@@ -138,8 +126,6 @@ function configure_actions(npc, ini, scheme, section, stype, temp)
     if not npc then return end
     local manager = npc:motivation_action_manager()
     if not manager or not temp.action then return end
-    -- Block the full idle/combat/danger action set so the plug owns the NPC while active
-    -- and the planners reclaim it the moment the evaluator returns false.
     local blocked = {
         xr_danger.actid,
         stalker_ids.action_combat_planner,

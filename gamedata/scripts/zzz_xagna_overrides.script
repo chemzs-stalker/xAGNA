@@ -1,6 +1,9 @@
---- zzz_xagna_overrides: applies the xAGNA companion edits onto the vanilla animation tables at game start.
+--- zzz_xagna_overrides: applies the xAGNA companion edits onto vanilla at game start.
 
 local pairs = pairs
+
+local WOUNDED_MEDKITS = { "medkit_script", "medkit", "medkit_army", "medkit_scientic" }
+local _wounded_exit_wrapped = false
 
 local function apply_animation_edits()
     if not state_mgr_animation_list then
@@ -80,10 +83,45 @@ local function apply_added_states()
     return count
 end
 
+--- Restores the wounded stand-up animation on recovery, as an additive wrap of xr_wounded eat_medkit.
+local function apply_wounded_exit()
+    local cls = xr_wounded and xr_wounded.Cwound_manager
+    if not (cls and cls.eat_medkit) then
+        xagna_log.log_warn("xr_wounded.Cwound_manager.eat_medkit absent, wounded-exit skipped")
+        return
+    end
+    if _wounded_exit_wrapped then return end
+    _wounded_exit_wrapped = true
+    local orig = cls.eat_medkit
+    cls.eat_medkit = function(self)
+        if self.can_use_medkit ~= true then
+            return orig(self)
+        end
+        local npc = self.npc
+        npc:set_health_ex(1)
+        for i = 1, #WOUNDED_MEDKITS do
+            local item = npc:object(WOUNDED_MEDKITS[i])
+            if item then alife_release_id(item:id()) break end
+        end
+        local begin_wounded = load_var(npc, "begin_wounded")
+        if begin_wounded ~= nil and time_global() - begin_wounded <= 60000 then
+            xr_sound.set_sound_play(npc:id(), "help_thanks")
+        end
+        save_var(npc, "begin_wounded", nil)
+        self.can_use_medkit = false
+        db.storage[npc:id()].wounded_already_selected = nil
+        state_mgr.set_state(npc, "idle")
+        if xagna_log.is_debug() then xagna_log.log_debug("[wounded] id=%d heal-exit stand-up", npc:id()) end
+        return true
+    end
+    if xagna_log.is_debug() then xagna_log.log_debug("[wounded] eat_medkit wrapped") end
+end
+
 function on_game_start()
     local animations = apply_animation_edits()
     local postures = apply_posture_edits()
     local added = apply_added_states()
+    apply_wounded_exit()
     xagna_log.log_info("game start: %s animation entries, %s postures, %s states applied", animations, postures, added)
     xagna_log.flush_log()
 end

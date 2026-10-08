@@ -10,7 +10,7 @@ end
 local function apply_log_level()
     local name = get_config("log_level") or "WARN"
     xagna_log.set_log_level(name)
-    xagna_log.log_info("log level = %s", name)
+    xagna_log.log_warn("log level = %s", name)
 end
 
 function on_mcm_load()
@@ -18,7 +18,7 @@ function on_mcm_load()
         id = "xagna",
         sh = true,
         gr = {
-            { id = "log_level", type = "list", val = 2, def = "WARN",
+            { id = "log_level", type = "list", val = 0, def = "WARN",
                 content = {
                     { "ERROR", "error" },
                     { "WARN", "warn" },
