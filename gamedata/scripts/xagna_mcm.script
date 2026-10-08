@@ -12,7 +12,7 @@ function on_mcm_load()
         id = "xagna",
         sh = true,
         gr = {
-            { id = "log_level", type = "list", val = 0, def = "WARN",
+            { id = "log_level", type = "list", val = 2, def = "WARN",
                 content = {
                     { "ERROR", "error" },
                     { "WARN", "warn" },
