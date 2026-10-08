@@ -24,7 +24,7 @@ function on_mcm_load()
     }
 end
 
-local FLUSH_PERIOD_SEC = 2
+local FLUSH_PERIOD_SEC = 60
 
 --- Re-arming time event: flushes buffered log lines to disk every FLUSH_PERIOD_SEC so DEBUG
 --- traces reach the file promptly for live tailing, not only on save or a level change. The
