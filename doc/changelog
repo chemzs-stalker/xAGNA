@@ -1,3 +1,15 @@
+1.05
+
+  Summary: companion and patrol freeze fixed, idle PDA use, MCM Log level fixed
+
+  Fixes
+    - Companions and patrolling NPCs follow and patrol smoothly again. The shared idle carried a multi-animation entry sequence that held an NPC in place until it finished, so it could not start moving until the sequence ended. Idle entry is instant again.
+    - The MCM Log level control works. The dropdown saved no choice and its menu entry showed a raw key. Both are fixed.
+    - The device_pda error no longer fills the log, now that the PDA draw is off the shared idle.
+
+  Changes
+    - Idle NPCs occasionally take out a PDA, look at it, and put it away. Only standing, calm, out-of-combat NPCs near you, never companions, and they drop it the instant danger appears. The PDA draw moved here from the always-on idle, where it was holding NPCs in place.
+
 1.04
 
   Summary: Script layer rewritten as an additive patch. xAGNA adds to the animation tables at load and coexists with other NPC animation mods,
