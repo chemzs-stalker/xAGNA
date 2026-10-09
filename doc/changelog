@@ -1,14 +1,18 @@
 1.05
 
-  Summary: additive patch, idle PDA reworked, companion and patrol freeze fixed, wounded stand-up, poses restored, MCM config and stats
+  Summary: additive patch, idle PDA reworked, companion and patrol freeze fixed, wounded stand-up, poses restored, relaxed idle pose option, MCM config
 
   First release of this fork of Chemzs's xAGNA. Every entry below is a change against that original.
 
   Compatibility
-    - The original replaced the game's animation and state tables with full-file copies. Those overrides are gone.
-      The same edits now apply additively at load, so xAGNA coexists with other NPC animation mods.
-    - With the latest demonized exes, each relaxed NPC holds its own standing idle pose.
-      On older builds this stays off and nothing else changes.
+    - The script layer was rewritten. The data, the animation and state tables, now sits apart from the
+      code, and the code adds its changes at load, wrapping or replacing a vanilla function only where
+      that fits. The original instead shipped whole copies of the game's core animation and state
+      scripts, which overwrote the shared state machine. Any mod that also touched it lost, and
+      companions and patrols could freeze. The additive rewrite should clear several of the reported
+      bugs and odd behavior. The OMFs ship as assets, as before.
+    - With the latest demonized exes, a Behavior option sets the relaxed standing idle pose, from the
+      vanilla player pose to one varied per NPC. Older builds ignore it and keep the vanilla pose.
 
   Changes
     - Idle PDA reworked.
@@ -30,8 +34,8 @@
     - The free-hand punch, the commander, guard and talk poses, the standing medical and wounded postures, and the re-animated motion set are unchanged.
 
   MCM
-    - Added a Behavior page: how often an NPC greets you, pulls a PDA on approach, checks one as a
-      standing commander, or checks one while idle near you, plus a wounded stand-up toggle. A slider at 0 turns it off.
+    - Added a Behavior page: chances for the greeting, the PDA on approach, a commander's PDA, and an
+      idle NPC's PDA, plus a wounded stand-up toggle and the relaxed idle pose choice. A chance slider at 0 turns it off.
     - Added a Log level control and an immediate-flush toggle for live tracing.
     - Added an Animation sampling toggle that records the states NPCs actually play to xagna_animations.log, for confirming the mod's motions fire.
 

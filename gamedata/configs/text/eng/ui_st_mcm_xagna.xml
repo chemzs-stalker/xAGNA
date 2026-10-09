@@ -39,6 +39,21 @@
 	<string id="ui_mcm_xagna_wounded_standup_desc">
 		<text>Recovering wounded NPCs play a get-up animation instead of snapping upright.</text>
 	</string>
+	<string id="ui_mcm_xagna_relaxed_idle">
+		<text>Relaxed NPC idle pose</text>
+	</string>
+	<string id="ui_mcm_xagna_relaxed_idle_desc">
+		<text>How a relaxed, free-standing NPC holds its torso. \n Player pose: every NPC shares the player's lowered-weapon idle (vanilla). \n Own idle: each NPC uses its base idle. \n Varied: each NPC keeps one of the pack's idle variants. \n Needs the latest demonized exes; ignored on older builds.</text>
+	</string>
+	<string id="xagna_xagna_behavior_relaxed_idle_lst_player">
+		<text>Player pose</text>
+	</string>
+	<string id="xagna_xagna_behavior_relaxed_idle_lst_own">
+		<text>NPC's own idle</text>
+	</string>
+	<string id="xagna_xagna_behavior_relaxed_idle_lst_varied">
+		<text>Varied per NPC</text>
+	</string>
 	<string id="ui_mcm_xagna_log_level">
 		<text>Log level</text>
 	</string>

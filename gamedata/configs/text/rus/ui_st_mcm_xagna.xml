@@ -69,4 +69,19 @@
   <string id="ui_mcm_xagna_wounded_standup_desc">
     <text>Раненые NPC при восстановлении проигрывают анимацию вставания вместо резкого подъёма.</text>
   </string>
+  <string id="ui_mcm_xagna_relaxed_idle">
+    <text>Поза покоя NPC</text>
+  </string>
+  <string id="ui_mcm_xagna_relaxed_idle_desc">
+    <text>Как расслабленный стоящий NPC держит корпус. \n Поза игрока: все используют опущенную позу игрока (ваниль). \n Своя поза: каждый NPC использует свою базовую позу покоя. \n Разные: каждый NPC получает один из вариантов позы мода. \n Требуются последние exe demonized; на старых сборках игнорируется.</text>
+  </string>
+  <string id="xagna_xagna_behavior_relaxed_idle_lst_player">
+    <text>Поза игрока</text>
+  </string>
+  <string id="xagna_xagna_behavior_relaxed_idle_lst_own">
+    <text>Своя поза NPC</text>
+  </string>
+  <string id="xagna_xagna_behavior_relaxed_idle_lst_varied">
+    <text>Разные по NPC</text>
+  </string>
 </string_table>

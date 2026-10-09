@@ -3,6 +3,7 @@
 local pairs = pairs
 local math_random = math.random
 local type = type
+local RegisterScriptCallback = RegisterScriptCallback
 
 local WOUNDED_MEDKITS = { "medkit_script", "medkit", "medkit_army", "medkit_scientic" }
 local _wounded_exit_wrapped = false
@@ -206,11 +207,12 @@ local function apply_relaxed_idle_cvar()
     local present = console and type(console.get_string) == "function"
         and console:get_string("npc_relaxed_idle_mode") ~= nil
     if not present then
-        xagna_log.log_warn("npc_relaxed_idle_mode absent (needs latest demonized), relaxed-idle spread skipped")
+        xagna_log.log_warn("npc_relaxed_idle_mode absent (needs latest demonized), relaxed-idle mode skipped")
         return
     end
-    console:execute("npc_relaxed_idle_mode 2")
-    xagna_log.log_info("npc_relaxed_idle_mode set to 2")
+    local mode = xagna_mcm.get_relaxed_idle_mode()
+    console:execute("npc_relaxed_idle_mode " .. mode)
+    xagna_log.log_info("npc_relaxed_idle_mode set to %s", mode)
 end
 
 function on_game_start()
@@ -221,6 +223,7 @@ function on_game_start()
     apply_wounded_exit()
     apply_approach_gate()
     apply_relaxed_idle_cvar()
+    RegisterScriptCallback("on_option_change", apply_relaxed_idle_cvar)
     xagna_log.log_info("game start: %s animation entries, %s postures, %s states, %s pda variants applied",
         animations, postures, added, variants)
     xagna_log.flush_log()

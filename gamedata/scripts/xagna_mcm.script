@@ -31,6 +31,16 @@ function is_wounded_standup()
     if v == nil then return true end
     return v
 end
+function get_relaxed_idle_mode() return get_config("xagna_behavior/relaxed_idle") or "2" end
+
+--- Logs every MCM setting at INFO on load, as the sibling mods do, so a log names the live config.
+local function log_mcm_settings()
+    xagna_log.log_info("[mcm] hello=%s approach=%s commander=%s idle=%s wounded=%s relaxed=%s level=%s flush=%s sampler=%s",
+        tostring(get_hello_chance()), tostring(get_pda_approach_chance()), tostring(get_pda_commander_chance()),
+        tostring(get_pda_idle_chance()), tostring(is_wounded_standup()), tostring(get_relaxed_idle_mode()),
+        tostring(get_config("xagna_logging/log_level")), tostring(get_config("xagna_logging/log_flush")),
+        tostring(get_config("xagna_logging/sampler")))
+end
 
 function on_mcm_load()
     return {
@@ -45,6 +55,13 @@ function on_mcm_load()
                     { id = "pda_commander",   type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_commander" },
                     { id = "pda_idle",        type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_idle" },
                     { id = "wounded_standup", type = "check", val = 1, def = true, hint = "xagna_wounded_standup" },
+                    { id = "relaxed_idle", type = "list", val = 0, def = "2", hint = "xagna_relaxed_idle",
+                        content = {
+                            { "0", "player" },
+                            { "1", "own" },
+                            { "2", "varied" },
+                        },
+                    },
                 },
             },
             {
@@ -77,4 +94,5 @@ function on_game_start()
     RegisterScriptCallback("mcm_option_restore_default", apply_log_level)
     RegisterScriptCallback("mcm_option_restore_default", apply_sampler)
     RegisterScriptCallback("mcm_option_restore_default", apply_log_flush)
+    RegisterScriptCallback("actor_on_first_update", log_mcm_settings)
 end
