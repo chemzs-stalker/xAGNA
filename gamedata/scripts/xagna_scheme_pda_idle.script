@@ -139,9 +139,6 @@ function configure_actions(npc, ini, scheme, section, stype, temp)
     end
 end
 
-function on_game_start()
-    if LoadScheme then
-        LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", stype_stalker)
-        if xagna_log.is_debug() then xagna_log.log_debug("[pda] scheme registered") end
-    end
+if LoadScheme then
+    LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", stype_stalker)
 end

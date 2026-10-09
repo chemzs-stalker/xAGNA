@@ -1,84 +1,103 @@
---- xagna_log: leveled logger for the xAGNA scripts; buffers to xagna.log and flushes on a cadence.
+--- xagna_log: all xAGNA tracing; a default xagna.log logger, named loggers, and the animation sampler.
 
 local getFS, io, os, pcall, string, table = getFS, io, os, pcall, string, table
-local RegisterScriptCallback = RegisterScriptCallback
+local RegisterScriptCallback, setmetatable, pairs, type, tostring = RegisterScriptCallback, setmetatable, pairs, type, tostring
+local math_random = math.random
 
 local FLUSH_PERIOD_SEC = 60
 local LEVELS = { ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 }
-local log_level = LEVELS.WARN
-local buffer = {}
-local log_path
-local log_started = false
-local last_body, last_level, last_label
-local repeat_count = 0
 
---- Sets the log threshold from a level name; an unknown name falls back to WARN.
-function set_log_level(name)
-    log_level = LEVELS[name] or LEVELS.WARN
+local SAMPLE_BASE_SEC   = 2
+local SAMPLE_JITTER_SEC = 3
+local SAMPLE_RADIUS_SQR = 50 * 50
+local SAMPLE_MAX_NPC    = 6
+local STATS_EVERY       = 50
+
+local Logger = {}
+Logger.__index = Logger
+
+local function new_logger(outfile)
+    return setmetatable({
+        outfile = outfile, level = LEVELS.WARN, buffer = {}, path = nil, started = false,
+        last_body = nil, last_level = nil, last_label = nil, repeat_count = 0,
+    }, Logger)
 end
 
---- True when the log level is DEBUG, so callers skip building trace strings when tracing is off.
-function is_debug()
-    return log_level >= LEVELS.DEBUG
-end
-
-local function get_log_path()
-    if not log_path then
-        log_path = getFS():update_path("$logs$", "") .. "xagna.log"
+function Logger:get_path()
+    if not self.path then
+        self.path = getFS():update_path("$logs$", "") .. self.outfile
     end
-    return log_path
+    return self.path
 end
 
 --- Collapses a run of identical consecutive lines into one ROW(N times) summary.
-local function flush_repeat()
-    if repeat_count == 0 then return end
-    buffer[#buffer + 1] = string.format("[%s][%s] ROW(%d times)", os.date("%H:%M:%S"), last_label, repeat_count)
-    repeat_count = 0
+function Logger:flush_repeat()
+    if self.repeat_count == 0 then return end
+    self.buffer[#self.buffer + 1] = string.format("[%s][%s] ROW(%d times)", os.date("%H:%M:%S"), self.last_label, self.repeat_count)
+    self.repeat_count = 0
 end
 
---- Writes the buffered lines to xagna.log in one open, then clears the buffer.
-function flush_log()
-    flush_repeat()
-    if #buffer == 0 then return end
-    local file = io.open(get_log_path(), log_started and "a" or "w")
+function Logger:flush()
+    self:flush_repeat()
+    if #self.buffer == 0 then return end
+    local file = io.open(self:get_path(), self.started and "a" or "w")
     if not file then return end
-    file:write(table.concat(buffer, "\n") .. "\n")
+    file:write(table.concat(self.buffer, "\n") .. "\n")
     file:flush()
     file:close()
-    buffer = {}
-    log_started = true
+    self.buffer = {}
+    self.started = true
 end
 
-local function emit(level, label, fmt, ...)
-    if level > log_level then return end
+function Logger:emit(level, label, fmt, ...)
+    if level > self.level then return end
     local ok, msg = pcall(string.format, fmt, ...)
     local body = ok and msg or fmt
-    if body == last_body and level == last_level then
-        repeat_count = repeat_count + 1
+    if body == self.last_body and level == self.last_level then
+        self.repeat_count = self.repeat_count + 1
         return
     end
-    flush_repeat()
-    last_body, last_level, last_label = body, level, label
-    buffer[#buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, body)
-    if level <= LEVELS.WARN or #buffer >= 300 then flush_log() end
+    self:flush_repeat()
+    self.last_body, self.last_level, self.last_label = body, level, label
+    self.buffer[#self.buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, body)
+    if level <= LEVELS.WARN or #self.buffer >= 300 then self:flush() end
 end
 
-function log_warn(fmt, ...)
-    emit(LEVELS.WARN, "WARN", fmt, ...)
+function Logger:warn(fmt, ...) self:emit(LEVELS.WARN, "WARN", fmt, ...) end
+function Logger:info(fmt, ...) self:emit(LEVELS.INFO, "INFO", fmt, ...) end
+function Logger:debug(fmt, ...) self:emit(LEVELS.DEBUG, "DEBUG", fmt, ...) end
+function Logger:set_level(name) self.level = LEVELS[name] or LEVELS.WARN end
+function Logger:is_debug() return self.level >= LEVELS.DEBUG end
+
+local _loggers = {}
+
+--- Returns the cached logger for a log filename, creating it on first request.
+function get_logger(outfile)
+    local logger = _loggers[outfile]
+    if not logger then
+        logger = new_logger(outfile)
+        _loggers[outfile] = logger
+    end
+    return logger
 end
 
-function log_info(fmt, ...)
-    emit(LEVELS.INFO, "INFO", fmt, ...)
+local _default = get_logger("xagna.log")
+
+function set_log_level(name) _default:set_level(name) end
+function is_debug() return _default:is_debug() end
+function log_warn(fmt, ...) _default:warn(fmt, ...) end
+function log_info(fmt, ...) _default:info(fmt, ...) end
+function log_debug(fmt, ...) _default:debug(fmt, ...) end
+function flush_log() _default:flush() end
+
+local function flush_all()
+    for _, logger in pairs(_loggers) do logger:flush() end
 end
 
-function log_debug(fmt, ...)
-    emit(LEVELS.DEBUG, "DEBUG", fmt, ...)
-end
-
---- Re-arming flush timer: writes buffered lines to disk every FLUSH_PERIOD_SEC for live tailing.
+--- Re-arming flush timer: writes every logger's buffer to disk every FLUSH_PERIOD_SEC for live tailing.
 local function flush_tick()
     ResetTimeEvent("xagna_log", "flush", FLUSH_PERIOD_SEC)
-    flush_log()
+    flush_all()
 end
 
 local function start_flush_timer()
@@ -86,8 +105,101 @@ local function start_flush_timer()
     CreateTimeEvent("xagna_log", "flush", FLUSH_PERIOD_SEC, flush_tick)
 end
 
+local _anim
+local _started = false
+local _affected = {}
+local _seen_states = {}
+local _seen_motions = {}
+local _seen_xagna = {}
+local _sample_count = 0
+
+local function _count(t)
+    local n = 0
+    for _ in pairs(t) do n = n + 1 end
+    return n
+end
+
+local function _mark(t)
+    if t then for k in pairs(t) do _affected[k] = true end end
+end
+
+--- Resolves a state to its configured animation entry and that entry's motion for a weapon slot.
+local function _resolve_motion(state_name, slot)
+    local states = state_lib and state_lib.states
+    local st = states and states[state_name]
+    if not st then return nil, nil end
+    local anim_name = st.animation
+    local list = state_mgr_animation_list and state_mgr_animation_list.animations
+    local entry = anim_name and list and list[anim_name]
+    if not entry then return anim_name, nil end
+    local seq = entry.idle or entry.into
+    local slotseq = seq and (seq[slot] or seq[0])
+    local motion = type(slotseq) == "table" and slotseq[1] or slotseq
+    return anim_name, motion
+end
+
+local function _log_stats()
+    _anim:info("[stats] samples=%d unique_states=%d unique_motions=%d xagna_seen=%d/%d",
+        _sample_count, _count(_seen_states), _count(_seen_motions), _count(_seen_xagna), _count(_affected))
+end
+
+--- Re-arming jittered sampler: snapshots the state a few nearby NPCs are in and records it.
+local function sample_tick()
+    ResetTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC + math_random(0, SAMPLE_JITTER_SEC))
+    local actor = db.actor
+    if not (_anim and actor and is_debug()) then return end
+    local list = db.OnlineStalkers
+    if not list then return end
+    local apos = actor:position()
+    local near = {}
+    for i = 1, #list do
+        local id = list[i]
+        local npc = id and level.object_by_id(id)
+        if npc and IsStalker(npc) and npc:alive() and npc:id() ~= actor:id()
+           and npc:position():distance_to_sqr(apos) <= SAMPLE_RADIUS_SQR then
+            near[#near + 1] = npc
+        end
+    end
+    local total = #near
+    local picks = total < SAMPLE_MAX_NPC and total or SAMPLE_MAX_NPC
+    for i = 1, picks do
+        local npc = total <= SAMPLE_MAX_NPC and near[i] or near[math_random(total)]
+        local state = npc and state_mgr.get_state(npc)
+        if state then
+            local anim_name, motion = _resolve_motion(state, npc:active_slot())
+            _sample_count = _sample_count + 1
+            _seen_states[state] = true
+            if motion then _seen_motions[motion] = true end
+            local tag = ""
+            if _affected[state] then _seen_xagna[state] = true tag = " [XAGNA]" end
+            _anim:debug("[sample] id=%d %s state=%s anim=%s motion=%s%s",
+                npc:id(), npc:name(), state, tostring(anim_name), tostring(motion), tag)
+            if _sample_count % STATS_EVERY == 0 then _log_stats() end
+        end
+    end
+end
+
+--- Starts the sampler the first time DEBUG is active (at first update or when the level is raised).
+local function start_sampler()
+    if _started or not is_debug() then return end
+    _started = true
+    _anim = get_logger("xagna_animations.log")
+    _anim:set_level("DEBUG")
+    _mark(xagna_core.get_posture_deltas())
+    _mark(xagna_core.get_added_states())
+    _mark(xagna_core.get_into_patches())
+    _mark(xagna_core.get_keep_entries())
+    _anim:info("[sample] animation sampler started (SAMPLED, every %d-%ds, %dm, up to %d NPC)",
+        SAMPLE_BASE_SEC, SAMPLE_BASE_SEC + SAMPLE_JITTER_SEC, 50, SAMPLE_MAX_NPC)
+    RemoveTimeEvent("xagna_log", "sample")
+    CreateTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC, sample_tick)
+end
+
 function on_game_start()
-    RegisterScriptCallback("save_state", flush_log)
-    RegisterScriptCallback("on_before_level_changing", flush_log)
-    RegisterScriptCallback("actor_on_first_update", start_flush_timer)
+    RegisterScriptCallback("save_state", flush_all)
+    RegisterScriptCallback("actor_on_net_destroy", flush_all)
+    RegisterScriptCallback("on_before_level_changing", flush_all)
+    RegisterScriptCallback("actor_on_first_update", start_sampler)
+    RegisterScriptCallback("on_option_change", start_sampler)
+    start_flush_timer()
 end

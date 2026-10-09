@@ -7,7 +7,7 @@
 		<text>Log level</text>
 	</string>
 	<string id="ui_mcm_xagna_log_level_desc">
-		<text>Log verbosity for the xAGNA script layer, written to xagna.log.</text>
+		<text>How much the xAGNA script layer writes to its logs. \n Error: failures only. \n Warning (default): failures and skipped edits. \n Info: also the game-start summary of applied edits. \n Debug: the full per-event trace of every PDA, wounded, and animation-table change to xagna.log, PLUS a sampled log of the animation states NPCs actually play, written to xagna_animations.log.</text>
 	</string>
 	<string id="xagna_log_level_lst_error">
 		<text>Error</text>

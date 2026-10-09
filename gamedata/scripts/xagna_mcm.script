@@ -18,6 +18,7 @@ function on_mcm_load()
         id = "xagna",
         sh = true,
         gr = {
+            { id = "log_level_desc", type = "desc", text = "ui_mcm_xagna_log_level_desc" },
             { id = "log_level", type = "list", val = 0, def = "WARN",
                 content = {
                     { "ERROR", "error" },

@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <string_table>
-	<string id="ui_mcm_xagna">
-		<text>xAGNA</text>
-	</string>
-	<string id="ui_mcm_xagna_log_level">
-		<text>Уровень логов</text>
-	</string>
-	<string id="ui_mcm_xagna_log_level_desc">
-		<text>Подробность логов слоя скриптов xAGNA, пишется в xagna.log.</text>
-	</string>
-	<string id="xagna_log_level_lst_error">
-		<text>Ошибки</text>
-	</string>
-	<string id="xagna_log_level_lst_warn">
-		<text>Предупреждения</text>
-	</string>
-	<string id="xagna_log_level_lst_info">
-		<text>Информация</text>
-	</string>
-	<string id="xagna_log_level_lst_debug">
-		<text>Отладка</text>
-	</string>
+  <string id="ui_mcm_menu_xagna">
+    <text>xAGNA</text>
+  </string>
+  <string id="ui_mcm_xagna_log_level">
+    <text>Уровень логов</text>
+  </string>
+  <string id="ui_mcm_xagna_log_level_desc">
+    <text>Подробность логов слоя скриптов xAGNA, пишется в xagna.log.</text>
+  </string>
+  <string id="xagna_log_level_lst_error">
+    <text>Ошибки</text>
+  </string>
+  <string id="xagna_log_level_lst_warn">
+    <text>Предупреждения</text>
+  </string>
+  <string id="xagna_log_level_lst_info">
+    <text>Информация</text>
+  </string>
+  <string id="xagna_log_level_lst_debug">
+    <text>Отладка</text>
+  </string>
 </string_table>
