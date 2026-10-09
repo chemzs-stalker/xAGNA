@@ -10,7 +10,7 @@ local function punch_slot(index)
     return { "free_facer_" .. index, { f = xr_effects.actor_punch }, "free_facer_" .. index, { f = xr_effects.clearAbuse } }
 end
 
---- Whole animation-list entries kept verbatim from xAGNA (swaps that change the motion, not the action).
+--- Whole animation-list entries kept from xAGNA (swaps that change the motion, not the action).
 function get_keep_entries()
     local uni_medkit = {
         prop = PROP_ONESHOT,
