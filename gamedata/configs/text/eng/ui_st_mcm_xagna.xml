@@ -3,6 +3,24 @@
 	<string id="ui_mcm_menu_xagna">
 		<text>xAGNA</text>
 	</string>
+	<string id="ui_mcm_menu_xagna_general">
+		<text>General</text>
+	</string>
+	<string id="ui_mcm_menu_xagna_logging">
+		<text>Logging</text>
+	</string>
+	<string id="ui_mcm_xagna_general_title">
+		<text>xAGNA NPC Animations Overhaul</text>
+	</string>
+	<string id="ui_mcm_xagna_general_reanimated">
+		<text>2087 motions re-animated</text>
+	</string>
+	<string id="ui_mcm_xagna_general_new_action">
+		<text>14 new action motions</text>
+	</string>
+	<string id="ui_mcm_xagna_general_new_cover">
+		<text>2 new cover motions</text>
+	</string>
 	<string id="ui_mcm_xagna_log_level">
 		<text>Log level</text>
 	</string>

@@ -21,4 +21,22 @@
   <string id="xagna_log_level_lst_debug">
     <text>Отладка</text>
   </string>
+  <string id="ui_mcm_menu_xagna_general">
+    <text>Общее</text>
+  </string>
+  <string id="ui_mcm_menu_xagna_logging">
+    <text>Журнал</text>
+  </string>
+  <string id="ui_mcm_xagna_general_title">
+    <text>xAGNA: переработка анимаций NPC</text>
+  </string>
+  <string id="ui_mcm_xagna_general_reanimated">
+    <text>2087 анимаций переработано</text>
+  </string>
+  <string id="ui_mcm_xagna_general_new_action">
+    <text>14 новых анимаций действий</text>
+  </string>
+  <string id="ui_mcm_xagna_general_new_cover">
+    <text>2 новые анимации укрытий</text>
+  </string>
 </string_table>
