@@ -13,26 +13,45 @@ local function apply_log_level()
     xagna_log.log_warn("log level = %s", name)
 end
 
+local function apply_sampler()
+    xagna_log.set_sampler_enabled(get_config("xagna_logging/sampler") and true or false)
+end
+
+local function apply_log_flush()
+    xagna_log.set_log_flush(get_config("xagna_logging/log_flush") and true or false)
+end
+
+--- Behavior chances, read live by the consumers. 0 on a slider disables that behavior.
+function get_hello_chance()        return get_config("xagna_behavior/hello_approach") or 50 end
+function get_pda_approach_chance()  return get_config("xagna_behavior/pda_approach")  or 15 end
+function get_pda_commander_chance() return get_config("xagna_behavior/pda_commander") or 15 end
+function get_pda_idle_chance()      return get_config("xagna_behavior/pda_idle")      or 15 end
+function is_wounded_standup()
+    local v = get_config("xagna_behavior/wounded_standup")
+    if v == nil then return true end
+    return v
+end
+
 function on_mcm_load()
     return {
         id = "xagna",
         gr = {
             {
-                id = "xagna_general",
+                id = "xagna_behavior",
                 sh = true,
                 gr = {
-                    { id = "title",   type = "desc", text = "ui_mcm_xagna_general_title", clr = {255, 200, 200, 200} },
-                    { id = "reanim",  type = "desc", text = "ui_mcm_xagna_general_reanimated" },
-                    { id = "new_act", type = "desc", text = "ui_mcm_xagna_general_new_action" },
-                    { id = "new_cov", type = "desc", text = "ui_mcm_xagna_general_new_cover" },
+                    { id = "hello_approach",  type = "track", val = 2, min = 0, max = 100, step = 5, def = 50, hint = "xagna_hello_approach" },
+                    { id = "pda_approach",    type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_approach" },
+                    { id = "pda_commander",   type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_commander" },
+                    { id = "pda_idle",        type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_idle" },
+                    { id = "wounded_standup", type = "check", val = 1, def = true, hint = "xagna_wounded_standup" },
                 },
             },
             {
                 id = "xagna_logging",
                 sh = true,
                 gr = {
-                    { id = "log_level_desc", type = "desc", text = "ui_mcm_xagna_log_level_desc" },
-                    { id = "log_level", type = "list", val = 0, def = "WARN",
+                    { id = "log_level", type = "list", val = 0, def = "WARN", hint = "xagna_log_level",
                         content = {
                             { "ERROR", "error" },
                             { "WARN", "warn" },
@@ -40,6 +59,8 @@ function on_mcm_load()
                             { "DEBUG", "debug" },
                         },
                     },
+                    { id = "log_flush", type = "check", val = 1, def = false, hint = "xagna_log_flush" },
+                    { id = "sampler", type = "check", val = 1, def = false, hint = "xagna_sampler" },
                 },
             },
         },
@@ -48,6 +69,12 @@ end
 
 function on_game_start()
     apply_log_level()
+    apply_sampler()
+    apply_log_flush()
     RegisterScriptCallback("on_option_change", apply_log_level)
+    RegisterScriptCallback("on_option_change", apply_sampler)
+    RegisterScriptCallback("on_option_change", apply_log_flush)
     RegisterScriptCallback("mcm_option_restore_default", apply_log_level)
+    RegisterScriptCallback("mcm_option_restore_default", apply_sampler)
+    RegisterScriptCallback("mcm_option_restore_default", apply_log_flush)
 end

@@ -9,34 +9,64 @@
   <string id="ui_mcm_xagna_log_level_desc">
     <text>Подробность логов слоя скриптов xAGNA, пишется в xagna.log.</text>
   </string>
-  <string id="xagna_log_level_lst_error">
+  <string id="xagna_xagna_logging_log_level_lst_error">
     <text>Ошибки</text>
   </string>
-  <string id="xagna_log_level_lst_warn">
+  <string id="xagna_xagna_logging_log_level_lst_warn">
     <text>Предупреждения</text>
   </string>
-  <string id="xagna_log_level_lst_info">
+  <string id="xagna_xagna_logging_log_level_lst_info">
     <text>Информация</text>
   </string>
-  <string id="xagna_log_level_lst_debug">
+  <string id="xagna_xagna_logging_log_level_lst_debug">
     <text>Отладка</text>
-  </string>
-  <string id="ui_mcm_menu_xagna_general">
-    <text>Общее</text>
   </string>
   <string id="ui_mcm_menu_xagna_logging">
     <text>Журнал</text>
   </string>
-  <string id="ui_mcm_xagna_general_title">
-    <text>xAGNA: переработка анимаций NPC</text>
+  <string id="ui_mcm_xagna_sampler">
+    <text>Семплирование анимаций</text>
   </string>
-  <string id="ui_mcm_xagna_general_reanimated">
-    <text>2087 анимаций переработано</text>
+  <string id="ui_mcm_xagna_sampler_desc">
+    <text>Выборочно записывает, какие анимации проигрывают ближайшие NPC, в xagna_animations.log. Не зависит от уровня логов; подтверждает, что анимации мода срабатывают.</text>
   </string>
-  <string id="ui_mcm_xagna_general_new_action">
-    <text>14 новых анимаций действий</text>
+  <string id="ui_mcm_xagna_log_flush">
+    <text>Сбрасывать лог построчно</text>
   </string>
-  <string id="ui_mcm_xagna_general_new_cover">
-    <text>2 новые анимации укрытий</text>
+  <string id="ui_mcm_xagna_log_flush_desc">
+    <text>Записывать каждую строку сразу, а не раз в 30 секунд. Медленнее; включайте только при наблюдении за логом вживую или поиске вылета.</text>
+  </string>
+  <string id="ui_mcm_menu_xagna_behavior">
+    <text>Поведение</text>
+  </string>
+  <string id="ui_mcm_xagna_hello_approach">
+    <text>Приветствие при подходе</text>
+  </string>
+  <string id="ui_mcm_xagna_hello_approach_desc">
+    <text>Шанс, что NPC делает приветственный жест, когда вы подходите близко. Независимо от КПК.</text>
+  </string>
+  <string id="ui_mcm_xagna_pda_approach">
+    <text>КПК при подходе</text>
+  </string>
+  <string id="ui_mcm_xagna_pda_approach_desc">
+    <text>Шанс, что он также достаёт КПК, когда вы подходите близко.</text>
+  </string>
+  <string id="ui_mcm_xagna_pda_commander">
+    <text>КПК у командира в простое</text>
+  </string>
+  <string id="ui_mcm_xagna_pda_commander_desc">
+    <text>Шанс, что командир проверяет КПК, стоя без дела.</text>
+  </string>
+  <string id="ui_mcm_xagna_pda_idle">
+    <text>КПК в простое</text>
+  </string>
+  <string id="ui_mcm_xagna_pda_idle_desc">
+    <text>Шанс, что спокойный стоящий NPC рядом с вами проверяет КПК.</text>
+  </string>
+  <string id="ui_mcm_xagna_wounded_standup">
+    <text>Вставание раненого</text>
+  </string>
+  <string id="ui_mcm_xagna_wounded_standup_desc">
+    <text>Раненые NPC при восстановлении проигрывают анимацию вставания вместо резкого подъёма.</text>
   </string>
 </string_table>

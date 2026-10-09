@@ -4,7 +4,7 @@ local getFS, io, os, pcall, string, table = getFS, io, os, pcall, string, table
 local RegisterScriptCallback, setmetatable, pairs, type, tostring = RegisterScriptCallback, setmetatable, pairs, type, tostring
 local math_random = math.random
 
-local FLUSH_PERIOD_SEC = 60
+local FLUSH_PERIOD_SEC = 30
 local LEVELS = { ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 }
 
 local SAMPLE_BASE_SEC   = 2
@@ -18,7 +18,7 @@ Logger.__index = Logger
 
 local function new_logger(outfile)
     return setmetatable({
-        outfile = outfile, level = LEVELS.WARN, buffer = {}, path = nil, started = false,
+        outfile = outfile, level = LEVELS.WARN, flush_on_level = LEVELS.ERROR, buffer = {}, path = nil, started = false,
         last_body = nil, last_level = nil, last_label = nil, repeat_count = 0,
     }, Logger)
 end
@@ -60,7 +60,9 @@ function Logger:emit(level, label, fmt, ...)
     self:flush_repeat()
     self.last_body, self.last_level, self.last_label = body, level, label
     self.buffer[#self.buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, body)
-    if level <= LEVELS.WARN or #self.buffer >= 300 then self:flush() end
+    -- Lines at or above flush_on_level hit disk at once (ERROR by default); the rest ride the 30s timer.
+    -- The 300-line cap bounds the buffer between timed flushes. The MCM log_flush toggle raises the cutoff.
+    if level <= self.flush_on_level or #self.buffer >= 300 then self:flush() end
 end
 
 function Logger:warn(fmt, ...) self:emit(LEVELS.WARN, "WARN", fmt, ...) end
@@ -84,6 +86,7 @@ end
 local _default = get_logger("xagna.log")
 
 function set_log_level(name) _default:set_level(name) end
+function set_log_flush(on) _default.flush_on_level = on and LEVELS.DEBUG or LEVELS.ERROR end
 function is_debug() return _default:is_debug() end
 function log_warn(fmt, ...) _default:warn(fmt, ...) end
 function log_info(fmt, ...) _default:info(fmt, ...) end
@@ -107,6 +110,7 @@ end
 
 local _anim
 local _started = false
+local _sampler_on = false
 local _affected = {}
 local _seen_states = {}
 local _seen_motions = {}
@@ -145,9 +149,10 @@ end
 
 --- Re-arming jittered sampler: snapshots the state a few nearby NPCs are in and records it.
 local function sample_tick()
+    if not _sampler_on then return end
     ResetTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC + math_random(0, SAMPLE_JITTER_SEC))
     local actor = db.actor
-    if not (_anim and actor and is_debug()) then return end
+    if not (_anim and actor) then return end
     local list = db.OnlineStalkers
     if not list then return end
     local apos = actor:position()
@@ -179,20 +184,33 @@ local function sample_tick()
     end
 end
 
---- Starts the sampler the first time DEBUG is active (at first update or when the level is raised).
+--- Starts the animation sampler when enabled; idempotent via the _started guard.
 local function start_sampler()
-    if _started or not is_debug() then return end
+    if _started or not _sampler_on then return end
     _started = true
     _anim = get_logger("xagna_animations.log")
     _anim:set_level("DEBUG")
     _mark(xagna_core.get_posture_deltas())
     _mark(xagna_core.get_added_states())
-    _mark(xagna_core.get_into_patches())
     _mark(xagna_core.get_keep_entries())
+    for _, spec in pairs(xagna_core.get_pda_variants()) do _affected[spec.name] = true end
     _anim:info("[sample] animation sampler started (SAMPLED, every %d-%ds, %dm, up to %d NPC)",
         SAMPLE_BASE_SEC, SAMPLE_BASE_SEC + SAMPLE_JITTER_SEC, 50, SAMPLE_MAX_NPC)
     RemoveTimeEvent("xagna_log", "sample")
     CreateTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC, sample_tick)
+end
+
+--- Stops the sampler and flushes a final stats line.
+local function stop_sampler()
+    RemoveTimeEvent("xagna_log", "sample")
+    if _anim then _log_stats() _anim:flush() end
+    _started = false
+end
+
+--- Enables or disables the animation sampler; driven by the MCM toggle, independent of the log level.
+function set_sampler_enabled(on)
+    _sampler_on = on and true or false
+    if _sampler_on then start_sampler() else stop_sampler() end
 end
 
 function on_game_start()
@@ -200,6 +218,5 @@ function on_game_start()
     RegisterScriptCallback("actor_on_net_destroy", flush_all)
     RegisterScriptCallback("on_before_level_changing", flush_all)
     RegisterScriptCallback("actor_on_first_update", start_sampler)
-    RegisterScriptCallback("on_option_change", start_sampler)
     start_flush_timer()
 end

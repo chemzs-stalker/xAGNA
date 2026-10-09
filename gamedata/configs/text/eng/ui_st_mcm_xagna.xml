@@ -3,40 +3,70 @@
 	<string id="ui_mcm_menu_xagna">
 		<text>xAGNA</text>
 	</string>
-	<string id="ui_mcm_menu_xagna_general">
-		<text>General</text>
-	</string>
 	<string id="ui_mcm_menu_xagna_logging">
 		<text>Logging</text>
 	</string>
-	<string id="ui_mcm_xagna_general_title">
-		<text>xAGNA NPC Animations Overhaul</text>
+	<string id="ui_mcm_menu_xagna_behavior">
+		<text>Behavior</text>
 	</string>
-	<string id="ui_mcm_xagna_general_reanimated">
-		<text>2087 motions re-animated</text>
+	<string id="ui_mcm_xagna_hello_approach">
+		<text>Hello on approach</text>
 	</string>
-	<string id="ui_mcm_xagna_general_new_action">
-		<text>14 new action motions</text>
+	<string id="ui_mcm_xagna_hello_approach_desc">
+		<text>Chance an NPC gives the beckon greeting when you get close. Independent of the PDA.</text>
 	</string>
-	<string id="ui_mcm_xagna_general_new_cover">
-		<text>2 new cover motions</text>
+	<string id="ui_mcm_xagna_pda_approach">
+		<text>PDA on approach</text>
+	</string>
+	<string id="ui_mcm_xagna_pda_approach_desc">
+		<text>Chance he also pulls out a PDA when you get close.</text>
+	</string>
+	<string id="ui_mcm_xagna_pda_commander">
+		<text>PDA on commander idle</text>
+	</string>
+	<string id="ui_mcm_xagna_pda_commander_desc">
+		<text>Chance a commander checks a PDA while standing idle.</text>
+	</string>
+	<string id="ui_mcm_xagna_pda_idle">
+		<text>PDA while idle</text>
+	</string>
+	<string id="ui_mcm_xagna_pda_idle_desc">
+		<text>Chance a calm standing NPC near you checks a PDA.</text>
+	</string>
+	<string id="ui_mcm_xagna_wounded_standup">
+		<text>Wounded stand-up</text>
+	</string>
+	<string id="ui_mcm_xagna_wounded_standup_desc">
+		<text>Recovering wounded NPCs play a get-up animation instead of snapping upright.</text>
 	</string>
 	<string id="ui_mcm_xagna_log_level">
 		<text>Log level</text>
 	</string>
 	<string id="ui_mcm_xagna_log_level_desc">
-		<text>How much the xAGNA script layer writes to its logs. \n Error: failures only. \n Warning (default): failures and skipped edits. \n Info: also the game-start summary of applied edits. \n Debug: the full per-event trace of every PDA, wounded, and animation-table change to xagna.log, PLUS a sampled log of the animation states NPCs actually play, written to xagna_animations.log.</text>
+		<text>How much the xAGNA script layer writes to xagna.log. \n Error: failures only. \n Warning (default): failures and skipped edits. \n Info: also the game-start summary of applied edits. \n Debug: the full per-event trace of every PDA, wounded, and animation-table change.</text>
 	</string>
-	<string id="xagna_log_level_lst_error">
+	<string id="ui_mcm_xagna_sampler">
+		<text>Animation sampling</text>
+	</string>
+	<string id="ui_mcm_xagna_sampler_desc">
+		<text>Samples which animation states nearby NPCs actually play and writes them to xagna_animations.log. Independent of the log level; use it to confirm the mod's motions fire.</text>
+	</string>
+	<string id="ui_mcm_xagna_log_flush">
+		<text>Flush log every line</text>
+	</string>
+	<string id="ui_mcm_xagna_log_flush_desc">
+		<text>Write each log line to disk at once instead of buffering. Turn on when diagnosing a crash so the final lines survive a hard freeze that never reaches the periodic flush. Slower; leave off for normal play.</text>
+	</string>
+	<string id="xagna_xagna_logging_log_level_lst_error">
 		<text>Error</text>
 	</string>
-	<string id="xagna_log_level_lst_warn">
+	<string id="xagna_xagna_logging_log_level_lst_warn">
 		<text>Warning</text>
 	</string>
-	<string id="xagna_log_level_lst_info">
+	<string id="xagna_xagna_logging_log_level_lst_info">
 		<text>Info</text>
 	</string>
-	<string id="xagna_log_level_lst_debug">
+	<string id="xagna_xagna_logging_log_level_lst_debug">
 		<text>Debug</text>
 	</string>
 </string_table>

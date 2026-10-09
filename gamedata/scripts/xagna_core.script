@@ -6,6 +6,19 @@ local PROP_PUNCH   = { maxidle = 5, sumidle = 2, rnd = 100 }
 
 local PDA_DRAW = { "norm_torso_pda_draw_1", "norm_torso_pda_idle_1", "norm_torso_pda_holster_1" }
 
+-- Slot-0 into pieces the approach gate composes: the beckon greeting, the PDA draw-hold-holster with
+-- its device attach/detach, and the lone detach used as the out of a PDA-carrying variant.
+local BECKON  = { "norm_torso_0_gest_beckoning_1", "idle_0_idle_0" }
+local PDA_SEQ = { { a = "device_pda" }, PDA_DRAW[1], PDA_DRAW[2], PDA_DRAW[3], { d = "device_pda" } }
+local DETACH  = { { d = "device_pda" } }
+
+local function _concat(a, b)
+    local t = {}
+    for i = 1, #a do t[#t + 1] = a[i] end
+    for i = 1, #b do t[#t + 1] = b[i] end
+    return t
+end
+
 local function punch_slot(index)
     return { "free_facer_" .. index, { f = xr_effects.actor_punch }, "free_facer_" .. index, { f = xr_effects.clearAbuse } }
 end
@@ -74,6 +87,21 @@ function get_keep_entries()
             idle = { [0] = "wounded_idle_0_new" },
             rnd  = nil,
         },
+        -- Chemzs's bloodsucker-search alert set (WIP; he is still tuning the in/out). into/out/rnd are
+        -- per-slot motion lists; idle is one motion per slot.
+        bloodsucker_search = {
+            prop = { maxidle = 0, sumidle = 0, rnd = 100 },
+            into = {
+                [1] = { "prisluh_1_idle_2" }, [2] = { "spetsnaz_4" }, [3] = { "prisluh_3_idle_0" }, [4] = { "prisluh_4_idle_0" },
+                [8] = { "norm_alert_in_0" }, [9] = { "prisluh_3_idle_0" }, [10] = { "spetsnaz_4" },
+            },
+            idle = { [1] = "prisluh_1_idle_1", [2] = "spetsnaz_4", [3] = "prisluh_3_idle_2", [4] = "prisluh_4_idle_4", [8] = "norm_alert_idle_0", [9] = "prisluh_3_idle_3", [10] = "spetsnaz_4" },
+            rnd  = { [2] = { "spetsnaz_4", "spetsnaz_5", "spetsnaz_6" }, [8] = { "norm_alert_idle_0", "norm_alert_idle_1", "norm_alert_idle_3" } },
+            out  = {
+                [1] = { "prisluh_1_idle_4" }, [2] = { "spetsnaz_7" }, [3] = { "prisluh_3_idle_5" }, [4] = { "prisluh_4_idle_5" },
+                [8] = { "norm_alert_out_0" }, [9] = { "prisluh_3_idle_5" }, [10] = { "spetsnaz_7" },
+            },
+        },
         xagna_use_pda = {
             prop = PROP_ONESHOT,
             into = { [0] = { { a = "device_pda" }, PDA_DRAW[1] } },
@@ -84,23 +112,15 @@ function get_keep_entries()
     }
 end
 
---- Into/out overlays for states whose vanilla into was empty, so the PDA draw is added without wiping idle/rnd.
-function get_into_patches()
+--- PDA-draw variant specs. Each builds a copy of a vanilla state's animation entry with a composed
+--- slot-0 into, so the approach gate can redirect an NPC to the hello, the PDA, both, or (a commander)
+--- the PDA alone, without wiping the base entry's idle/rnd. zzz builds them from the live vanilla entry.
+function get_pda_variants()
     return {
-        choosing = {
-            into = { [0] = { { a = "device_pda" }, PDA_DRAW[1], PDA_DRAW[2], PDA_DRAW[3], { d = "device_pda" } } },
-            out  = { [0] = { { d = "device_pda" } } },
-        },
-        talk_default = {
-            into = {
-                [0] = { "norm_torso_0_gest_beckoning_1", "idle_0_idle_0", { a = "device_pda" }, PDA_DRAW[1], PDA_DRAW[2], PDA_DRAW[3], { d = "device_pda" } },
-                [2] = { "norm_talk_2_in_0" },
-            },
-            out = {
-                [0] = { { d = "device_pda" } },
-                [2] = { "norm_talk_2_out_0" },
-            },
-        },
+        { name = "xagna_talk_h",   base = "talk_default", into0 = BECKON,                  out0 = nil },
+        { name = "xagna_talk_p",   base = "talk_default", into0 = PDA_SEQ,                  out0 = DETACH },
+        { name = "xagna_talk_hp",  base = "talk_default", into0 = _concat(BECKON, PDA_SEQ), out0 = DETACH },
+        { name = "xagna_choose_p", base = "choose",       into0 = PDA_SEQ,                  out0 = DETACH },
     }
 end
 

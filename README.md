@@ -13,6 +13,12 @@ The scripts are additive and never replace a vanilla file.
 
 The repo holds the complete mod, ready to install.
 
+## Compatibility
+
+Additive and safe on any Anomaly or GAMMA install: it replaces no vanilla file and coexists with other NPC animation mods.
+
+With the latest demonized exes, each relaxed NPC holds its own standing idle pose. On older builds that one touch stays off and nothing else changes.
+
 ## Credits
 
 xAGNA and all its assets belong to Chemzs.

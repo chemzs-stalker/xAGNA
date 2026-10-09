@@ -1,7 +1,11 @@
 --- xagna_scheme_pda_idle: parallel GOAP scheme; an idle, calm, out-of-combat NPC draws a PDA and yields to danger.
 
-local math_random, time_global = math.random, time_global
+local math_random, time_global, tostring = math.random, time_global, tostring
 local get_object_squad = get_object_squad
+
+-- stype_stalker (modules.script:6). Inlined: at file-scope load the modules namespace may be
+-- unresolved, so the bare symbol reads nil and LoadScheme would skip schemes_by_stype registration.
+local STYPE_STALKER = 0
 
 local ACTID = 188501
 local EVAID = 188501
@@ -10,7 +14,6 @@ actid = ACTID
 
 local ACTOR_RADIUS_SQR = 50 * 50
 local COOLDOWN_MS      = 180000
-local ROLL_CHANCE      = 15
 local CHECK_EVERY_MS   = 5000
 local HOLD_MS          = 6000
 
@@ -27,7 +30,7 @@ local function get_skip_reason(npc)
     if IsWounded(npc) then return "wounded" end
     if npc:best_enemy() then return "enemy" end
     if xr_danger.has_danger(npc) then return "danger" end
-    if npc:mental_state() ~= anim.free then return "mental" end
+    if npc:mental_state() ~= anim.free then return "mental=" .. tostring(npc:mental_state()) end
     if npc:movement_type() ~= move.stand then return "moving" end
     if npc:body_state() ~= move.standing then return "crouch" end
     if npc:in_smart_cover() then return "smart_cover" end
@@ -58,8 +61,9 @@ function eva_xagna_pda_idle:evaluate()
         if dbg then xagna_log.log_debug("[pda] id=%d skip=%s", self.object:id(), reason) end
         return false
     end
-    if math_random(100) > ROLL_CHANCE then
-        if dbg then xagna_log.log_debug("[pda] id=%d skip=roll chance=%d", self.object:id(), ROLL_CHANCE) end
+    local chance = xagna_mcm.get_pda_idle_chance()
+    if chance <= 0 or math_random(100) > chance then
+        if dbg then xagna_log.log_debug("[pda] id=%d skip=roll chance=%d", self.object:id(), chance) end
         return false
     end
     st.active = true
@@ -140,5 +144,11 @@ function configure_actions(npc, ini, scheme, section, stype, temp)
 end
 
 if LoadScheme then
-    LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", stype_stalker)
+    LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", STYPE_STALKER)
+    -- Fail loud, not silent: a nil stype registers schemes[] but skips schemes_by_stype[], so the
+    -- scheme binds to nobody with no error. Verify it entered the generic-bind list, warn if not.
+    local by_stype = _G.schemes_by_stype and _G.schemes_by_stype[STYPE_STALKER]
+    if not (by_stype and by_stype["xagna_pda_idle"]) then
+        xagna_log.log_warn("[pda] scheme did NOT register in schemes_by_stype[%d]; it will bind to no NPC", STYPE_STALKER)
+    end
 end

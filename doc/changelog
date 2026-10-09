@@ -1,36 +1,39 @@
 1.05
 
-  Summary: companion and patrol freeze fixed, wounded stand-up, idle PDA use, MCM Log level fixed
+  Summary: additive patch, idle PDA reworked, companion and patrol freeze fixed, wounded stand-up, poses restored, MCM config and stats
 
-  Fixes
-    - Companions and patrolling NPCs follow and patrol smoothly again. The shared idle carried a multi-animation entry sequence that held an NPC in place until it finished, so it could not start moving until the sequence ended. Idle entry is instant again.
-    - Wounded NPCs play their stand-up animation as they recover and get back on their feet.
-    - The MCM Log level control works. The dropdown saved no choice and its menu entry showed a raw key. Both are fixed.
-    - The device_pda error no longer fills the log, now that the PDA draw is off the shared idle.
-
-  Changes
-    - Idle NPCs occasionally take out a PDA, look at it, and put it away. Only standing, calm, out-of-combat NPCs near you, never companions, and they drop it the instant danger appears. The PDA draw moved here from the always-on idle, where it was holding NPCs in place.
-
-1.04
-
-  Summary: Script layer rewritten as an additive patch. xAGNA adds to the animation tables at load and coexists with other NPC animation mods,
-    and it restores every vanilla pose the old scripts dropped while keeping the new animations.
+  First release of this fork of Chemzs's xAGNA. Every entry below is a change against that original.
 
   Compatibility
-    - The three full-file animation-table overrides give way to 2 additive scripts that patch the tables at load. xAGNA stops shipping those files, so it coexists with other NPC animation mods.
+    - The original replaced the game's animation and state tables with full-file copies. Those overrides are gone.
+      The same edits now apply additively at load, so xAGNA coexists with other NPC animation mods.
+    - With the latest demonized exes, each relaxed NPC holds its own standing idle pose.
+      On older builds this stays off and nothing else changes.
+
+  Changes
+    - Idle PDA reworked.
+      The original drew it on the shared idle. Every NPC pulled one out, and the multi-step draw froze them in place.
+      That blocked patrol and companions. The idle is instant again.
+      Now only standing, calm, out-of-combat NPCs near you occasionally take one out. Never companions, dropped the moment danger appears.
+    - Wounded NPCs play a stand-up animation as they recover, instead of snapping upright.
+    - The greeting and PDA an NPC plays when you walk up to a commander no longer fire on every approach.
+      Each rolls its own chance, so most approaches are a plain greeting.
 
   Animations restored
-    - Sentry, listening and searching NPCs play their poses on every weapon slot again. The old scripts had dropped several slots to a plain idle.
-    - NPCs searching for a bloodsucker play the alert pose again. The old scripts left it blank.
-    - The unarmed idle cycles its 4 variants again, and the duplicated idle entry is fixed.
+    - Sentry, listening and searching NPCs play their poses on every weapon slot again.
+    - NPCs searching for a bloodsucker play the alert pose again.
+    - The unarmed idle cycles its 4 variants again.
     - Heavy-wounded variant 3 keeps its own distinct pose again.
     - Standing smoke plays the smoking animation again.
 
   Animations kept
-    - The free-hand punch, the PDA draw on the idle, commander, guard and talk poses, the standing medical and wounded postures, and the re-animated motion set stay unchanged.
+    - The free-hand punch, the commander, guard and talk poses, the standing medical and wounded postures, and the re-animated motion set are unchanged.
 
-  Diagnostics
-    - Added an MCM Log level control. The script layer writes its applied edits and any missing-table warnings to its own xagna.log.
+  MCM
+    - Added a Behavior page: how often an NPC greets you, pulls a PDA on approach, checks one as a
+      standing commander, or checks one while idle near you, plus a wounded stand-up toggle. A slider at 0 turns it off.
+    - Added a Log level control and an immediate-flush toggle for live tracing.
+    - Added an Animation sampling toggle that records the states NPCs actually play to xagna_animations.log, for confirming the mod's motions fire.
 
   Install
-    - Delete the previous xAGNA, then install this version. It drops the old script files. Leaving them in place re-applies the old behavior.
+    - Delete the previous xAGNA before installing. It no longer ships the old override script files. Leaving them in place re-applies the old behavior.
