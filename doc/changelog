@@ -24,7 +24,9 @@
       Each rolls its own chance, so most approaches are a plain greeting.
 
   Animations restored
-    - Sentry, listening and searching NPCs play their poses on every weapon slot again.
+    - Sentry and listening NPCs play a tuned set per weapon slot: a look-around or listening pose on
+      most slots, a plain idle on the rest, and a slot that borrowed another's idle now plays its own.
+    - Searching NPCs play their poses on every weapon slot again.
     - NPCs searching for a bloodsucker play the alert pose again.
     - The unarmed idle cycles its 4 variants again.
     - Heavy-wounded variant 3 keeps its own distinct pose again.
