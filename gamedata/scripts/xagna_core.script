@@ -3,6 +3,7 @@
 local PROP_ONESHOT = { maxidle = 1, sumidle = 1, rnd = 100 }
 local PROP_WOUNDED = { maxidle = 5, sumidle = 10, rnd = 70 }
 local PROP_PUNCH   = { maxidle = 5, sumidle = 2, rnd = 100 }
+local PROP_IDLE    = { maxidle = 5, sumidle = 3, rnd = 80 }
 
 local PDA_DRAW = { "norm_torso_pda_draw_1", "norm_torso_pda_idle_1", "norm_torso_pda_holster_1" }
 
@@ -22,6 +23,52 @@ end
 local function punch_slot(index)
     return { "free_facer_" .. index, { f = xr_effects.actor_punch }, "free_facer_" .. index, { f = xr_effects.clearAbuse } }
 end
+
+-- Sentry idle: slots 1/2/4/8/9 play the chasovoy look-around set, the rest a plain idle. Fixes
+-- vanilla's slot-9 idle pointing at slot 2. Chemzs is still tuning which slots get chasovoy.
+local IDLE_CHASOVOY = {
+    prop = PROP_IDLE,
+    into = nil,
+    out  = nil,
+    idle = {
+        [0] = "idle_0_idle_1", [1] = "idle_1_idle_1", [2] = "idle_2_idle_1", [3] = "idle_3_idle_1",
+        [4] = "idle_4_idle_1", [8] = "idle_8_idle_1", [9] = "idle_9_idle_1", [10] = "idle_10_idle_0",
+    },
+    rnd = {
+        [0]  = { "idle_0_idle_1", "idle_0_idle_1", "idle_0_idle_1", "idle_0_idle_1", "idle_0_idle_1" },
+        [1]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
+        [2]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
+        [3]  = { "idle_3_idle_0", "idle_3_idle_0", "idle_3_idle_0", "idle_3_idle_0", "idle_3_idle_0" },
+        [4]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
+        [8]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
+        [9]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
+        [10] = { "idle_10_idle_0", "idle_10_idle_0", "idle_10_idle_0", "idle_10_idle_0", "idle_10_idle_0" },
+    },
+}
+
+-- Listening/caution: slots 3 and 10 fall back to a plain idle, the rest play the prisluh set.
+-- Chemzs is still tuning the in/out.
+local CAUTION = {
+    prop = PROP_IDLE,
+    into = {
+        [0] = { "prisluh_0_in" }, [1] = { "prisluh_1_in" }, [2] = { "prisluh_2_in" }, [3] = { "idle_3_idle_0" },
+        [4] = { "prisluh_4_in" }, [8] = { "prisluh_8_in" }, [9] = { "prisluh_9_in" }, [10] = { "idle_10_idle_0" },
+    },
+    out = {
+        [0] = { "prisluh_0_out" }, [1] = { "prisluh_1_out" }, [2] = { "prisluh_2_out" }, [3] = { "idle_3_idle_0" },
+        [4] = { "prisluh_4_out" }, [8] = { "prisluh_8_out" }, [9] = { "prisluh_9_out" }, [10] = { "idle_10_idle_0" },
+    },
+    idle = {
+        [0] = "prisluh_0_1", [1] = "prisluh_1_1", [2] = "prisluh_2_1", [3] = "idle_3_idle_0",
+        [4] = "prisluh_4_1", [8] = "prisluh_8_1", [9] = "prisluh_9_1", [10] = "idle_10_idle_0",
+    },
+    rnd = {
+        [0] = { "prisluh_0_0", "prisluh_0_2" }, [1] = { "prisluh_1_0", "prisluh_1_2" },
+        [2] = { "prisluh_2_0", "prisluh_2_2" }, [3] = { "idle_3_idle_0", "idle_3_idle_0" },
+        [4] = { "prisluh_4_0", "prisluh_4_2" }, [8] = { "prisluh_8_0", "prisluh_8_2" },
+        [9] = { "prisluh_9_0", "prisluh_9_2" }, [10] = { "idle_10_idle_0", "idle_10_idle_0" },
+    },
+}
 
 --- Whole animation-list entries kept from xAGNA (swaps that change the motion, not the action).
 function get_keep_entries()
@@ -102,6 +149,8 @@ function get_keep_entries()
                 [8] = { "norm_alert_out_0" }, [9] = { "prisluh_3_idle_5" }, [10] = { "spetsnaz_7" },
             },
         },
+        idle_chasovoy = IDLE_CHASOVOY,
+        caution = CAUTION,
         xagna_use_pda = {
             prop = PROP_ONESHOT,
             into = { [0] = { { a = "device_pda" }, PDA_DRAW[1] } },
