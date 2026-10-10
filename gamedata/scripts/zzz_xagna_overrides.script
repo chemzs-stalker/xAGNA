@@ -1,16 +1,15 @@
 --- zzz_xagna_overrides: applies the xAGNA companion edits onto vanilla at game start.
 
-local pairs = pairs
-local math_random = math.random
-local type = type
-local RegisterScriptCallback = RegisterScriptCallback
+local pairs, math_random, type, RegisterScriptCallback = pairs, math.random, type, RegisterScriptCallback
 
 local WOUNDED_MEDKITS = { "medkit_script", "medkit", "medkit_army", "medkit_scientic" }
 local _wounded_exit_wrapped = false
 
-local APPROACH_STATES = { choose = true, talk_default = true }
+local CHOOSE_STATE = "choose"
+local APPROACH_STATES = { [CHOOSE_STATE] = true, talk_default = true }
 local _set_state_wrapped = false
 local _approach_decided = {}
+local _orig_set_state
 
 local function apply_animation_edits()
     if not state_mgr_animation_list then
@@ -33,9 +32,9 @@ local function apply_animation_edits()
     return count
 end
 
---- Builds each PDA-draw variant as a copy of its vanilla base (state posture + animation entry) with the
---- composed slot-0 into, so the approach gate can redirect an NPC to a PDA pose without overlaying the
---- shared base state. The base stays vanilla, so an NPC that loses the roll plays the plain greet.
+--- Builds each PDA-draw variant as a copy of its vanilla base with the composed slot-0 into.
+--- The shared base state stays vanilla, so the approach gate only overlays the PDA pose.
+-- @novalidate(conventions.manual_copy, reason:"xagna ships standalone, no xlibs dependency")
 local function apply_pda_variants()
     local states = state_lib and state_lib.states
     local anims = state_mgr_animation_list and state_mgr_animation_list.animations
@@ -48,19 +47,19 @@ local function apply_pda_variants()
         local base_state = states[spec.base]
         local base_anim = base_state and anims[base_state.animation]
         if base_state and base_anim then
-            local a = {}
-            for k, v in pairs(base_anim) do a[k] = v end
-            a.into = {}
-            if base_anim.into then for k, v in pairs(base_anim.into) do a.into[k] = v end end
-            a.out = {}
-            if base_anim.out then for k, v in pairs(base_anim.out) do a.out[k] = v end end
-            a.into[0] = spec.into0
-            a.out[0] = spec.out0
-            anims[spec.name] = a
-            local s = {}
-            for k, v in pairs(base_state) do s[k] = v end
-            s.animation = spec.name
-            states[spec.name] = s
+            local variant_anim = {}
+            for k, v in pairs(base_anim) do variant_anim[k] = v end
+            variant_anim.into = {}
+            if base_anim.into then for k, v in pairs(base_anim.into) do variant_anim.into[k] = v end end
+            variant_anim.out = {}
+            if base_anim.out then for k, v in pairs(base_anim.out) do variant_anim.out[k] = v end end
+            variant_anim.into[0] = spec.into0
+            variant_anim.out[0] = spec.out0
+            anims[spec.name] = variant_anim
+            local variant_state = {}
+            for k, v in pairs(base_state) do variant_state[k] = v end
+            variant_state.animation = spec.name
+            states[spec.name] = variant_state
             count = count + 1
             xagna_log.log_debug("pda variant %s built from %s", spec.name, spec.base)
         else
@@ -68,6 +67,12 @@ local function apply_pda_variants()
         end
     end
     return count
+end
+
+local function _apply_posture(state, delta)
+    if delta.weapon then state.weapon = delta.weapon end
+    state.mental = delta.mental
+    state.bodystate = delta.bodystate
 end
 
 local function apply_posture_edits()
@@ -85,11 +90,7 @@ local function apply_posture_edits()
     for name, delta in pairs(xagna_core.get_posture_deltas()) do
         local state = states[name]
         if state then
-            if delta.weapon then
-                state.weapon = delta.weapon
-            end
-            state.mental = delta.mental
-            state.bodystate = delta.bodystate
+            _apply_posture(state, delta)
             xagna_log.log_debug("posture %s applied", name)
             count = count + 1
         else
@@ -116,6 +117,7 @@ local function apply_added_states()
 end
 
 --- Restores the wounded stand-up animation on recovery, as an additive wrap of xr_wounded eat_medkit.
+-- @novalidate(conventions.func_no_verb, reason:"eat_medkit overrides the vanilla Cwound_manager method; the name must match")
 local function apply_wounded_exit()
     local cls = xr_wounded and xr_wounded.Cwound_manager
     if not (cls and cls.eat_medkit) then
@@ -149,13 +151,10 @@ local function apply_wounded_exit()
     if xagna_log.is_debug() then xagna_log.log_debug("[wounded] eat_medkit wrapped") end
 end
 
---- Rolls, once per fresh approach, which PDA variant (if any) a commander shows, and redirects the
---- state there. hello and PDA are independent rolls: both win -> hello+PDA, else whichever, else the
---- plain vanilla greet. choose (commander idle) rolls the commander chance alone. nil = unrolled,
---- false = plain greet, a name = the variant state. Latched per NPC so meet re-setting the state every
---- frame neither re-rolls nor flickers; cleared when the NPC leaves to any other state.
-local function _roll_approach(state_name)
-    if state_name == "choose" then
+--- Selects which PDA variant a fresh approach shows, hello and PDA rolling independently.
+--- The choose state rolls the commander chance; returns false for the plain greet or a variant name.
+local function _select_approach(state_name)
+    if state_name == CHOOSE_STATE then
         if math_random(100) <= xagna_mcm.get_pda_commander_chance() then return "xagna_choose_p" end
         return false
     end
@@ -167,6 +166,34 @@ local function _roll_approach(state_name)
     return false
 end
 
+--- Latches the approach decision per NPC, so meet re-setting the state does not re-roll or flicker.
+--- The latch clears when the NPC leaves to any other state.
+local function _get_approach(npc, state_name)
+    local id = npc:id()
+    local decided = _approach_decided[id]
+    if decided == nil then
+        decided = _select_approach(state_name)
+        _approach_decided[id] = decided
+        if xagna_log.is_debug() then
+            xagna_log.log_debug("[overlay] id=%d %s -> %s", id, state_name, decided or "vanilla")
+        end
+    end
+    return decided
+end
+
+--- The gated set_state: an approach state routes through the latched decision, everything else passes.
+local function _set_state_gated(npc, state_name, callback, timeout_ms, target, extra)
+    if npc and APPROACH_STATES[state_name] then
+        local decided = _get_approach(npc, state_name)
+        if decided then
+            return _orig_set_state(npc, decided, callback, timeout_ms, target, extra)
+        end
+    elseif npc and state_name then
+        _approach_decided[npc:id()] = nil
+    end
+    return _orig_set_state(npc, state_name, callback, timeout_ms, target, extra)
+end
+
 local function apply_approach_gate()
     if _set_state_wrapped then return end
     if not (state_mgr and state_mgr.set_state) then
@@ -174,36 +201,15 @@ local function apply_approach_gate()
         return
     end
     _set_state_wrapped = true
-    local orig = state_mgr.set_state
-    state_mgr.set_state = function(npc, state_name, callback, timeout, target, extra)
-        if npc and APPROACH_STATES[state_name] then
-            local id = npc:id()
-            local decided = _approach_decided[id]
-            if decided == nil then
-                decided = _roll_approach(state_name)
-                _approach_decided[id] = decided
-                if xagna_log.is_debug() then
-                    xagna_log.log_debug("[overlay] id=%d %s -> %s", id, state_name, decided or "vanilla")
-                end
-            end
-            if decided then
-                return orig(npc, decided, callback, timeout, target, extra)
-            end
-        elseif npc and state_name then
-            _approach_decided[npc:id()] = nil
-        end
-        return orig(npc, state_name, callback, timeout, target, extra)
-    end
+    _orig_set_state = state_mgr.set_state
+    state_mgr.set_state = _set_state_gated
     if xagna_log.is_debug() then xagna_log.log_debug("[overlay] approach gate wrapped") end
 end
 
---- With the latest demonized exes, mode 2 spreads the relaxed free-standing torso idle per NPC across
---- the authored variants, instead of every relaxed NPC sharing the player's safemode pose. Probed, so an
---- older exe without the cvar stays inert -- the compatibility floor does not move for this.
+--- Sets the demonized npc_relaxed_idle_mode cvar from the MCM list.
+--- Probed, so an older exe without the cvar stays inert and the compatibility floor does not move.
 local function apply_relaxed_idle_cvar()
     local console = get_console()
-    -- Capability probe (the xcombat pattern): an older exe or the test stub lacks get_string, which is
-    -- itself the "cvar absent" signal; short-circuit before the call so neither path errors.
     local present = console and type(console.get_string) == "function"
         and console:get_string("npc_relaxed_idle_mode") ~= nil
     if not present then

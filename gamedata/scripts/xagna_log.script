@@ -1,4 +1,5 @@
 --- xagna_log: all xAGNA tracing; a default xagna.log logger, named loggers, and the animation sampler.
+-- @novalidate(conventions.mixed_functions, reason:"Logger class methods use table syntax and group with the class, not the local/public split")
 
 local getFS, io, os, pcall, string, table = getFS, io, os, pcall, string, table
 local RegisterScriptCallback, setmetatable, pairs, type, tostring = RegisterScriptCallback, setmetatable, pairs, type, tostring
@@ -6,6 +7,7 @@ local math_random = math.random
 
 local FLUSH_PERIOD_SEC = 30
 local LEVELS = { ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 }
+local BUFFER_FLUSH_LINES = 300
 
 local SAMPLE_BASE_SEC   = 2
 local SAMPLE_JITTER_SEC = 3
@@ -16,7 +18,18 @@ local STATS_EVERY       = 50
 local Logger = {}
 Logger.__index = Logger
 
-local function new_logger(outfile)
+local _loggers = {}
+local _default
+local _anim
+local _started = false
+local _sampler_on = false
+local _affected = {}
+local _seen_states = {}
+local _seen_motions = {}
+local _seen_xagna = {}
+local _sample_count = 0
+
+local function build_logger(outfile)
     return setmetatable({
         outfile = outfile, level = LEVELS.WARN, flush_on_level = LEVELS.ERROR, buffer = {}, path = nil, started = false,
         last_body = nil, last_level = nil, last_label = nil, repeat_count = 0,
@@ -49,7 +62,8 @@ function Logger:flush()
     self.started = true
 end
 
-function Logger:emit(level, label, fmt, ...)
+--- @safety SAFE - pcall guards string.format against a fmt/arg mismatch, falling back to the raw fmt.
+function Logger:publish(level, label, fmt, ...)
     if level > self.level then return end
     local ok, msg = pcall(string.format, fmt, ...)
     local body = ok and msg or fmt
@@ -60,38 +74,14 @@ function Logger:emit(level, label, fmt, ...)
     self:flush_repeat()
     self.last_body, self.last_level, self.last_label = body, level, label
     self.buffer[#self.buffer + 1] = string.format("[%s][%s] %s", os.date("%H:%M:%S"), label, body)
-    -- Lines at or above flush_on_level hit disk at once (ERROR by default); the rest ride the 30s timer.
-    -- The 300-line cap bounds the buffer between timed flushes. The MCM log_flush toggle raises the cutoff.
-    if level <= self.flush_on_level or #self.buffer >= 300 then self:flush() end
+    if level <= self.flush_on_level or #self.buffer >= BUFFER_FLUSH_LINES then self:flush() end
 end
 
-function Logger:warn(fmt, ...) self:emit(LEVELS.WARN, "WARN", fmt, ...) end
-function Logger:info(fmt, ...) self:emit(LEVELS.INFO, "INFO", fmt, ...) end
-function Logger:debug(fmt, ...) self:emit(LEVELS.DEBUG, "DEBUG", fmt, ...) end
+function Logger:warn(fmt, ...) self:publish(LEVELS.WARN, "WARN", fmt, ...) end
+function Logger:info(fmt, ...) self:publish(LEVELS.INFO, "INFO", fmt, ...) end
+function Logger:debug(fmt, ...) self:publish(LEVELS.DEBUG, "DEBUG", fmt, ...) end
 function Logger:set_level(name) self.level = LEVELS[name] or LEVELS.WARN end
 function Logger:is_debug() return self.level >= LEVELS.DEBUG end
-
-local _loggers = {}
-
---- Returns the cached logger for a log filename, creating it on first request.
-function get_logger(outfile)
-    local logger = _loggers[outfile]
-    if not logger then
-        logger = new_logger(outfile)
-        _loggers[outfile] = logger
-    end
-    return logger
-end
-
-local _default = get_logger("xagna.log")
-
-function set_log_level(name) _default:set_level(name) end
-function set_log_flush(on) _default.flush_on_level = on and LEVELS.DEBUG or LEVELS.ERROR end
-function is_debug() return _default:is_debug() end
-function log_warn(fmt, ...) _default:warn(fmt, ...) end
-function log_info(fmt, ...) _default:info(fmt, ...) end
-function log_debug(fmt, ...) _default:debug(fmt, ...) end
-function flush_log() _default:flush() end
 
 local function flush_all()
     for _, logger in pairs(_loggers) do logger:flush() end
@@ -108,23 +98,14 @@ local function start_flush_timer()
     CreateTimeEvent("xagna_log", "flush", FLUSH_PERIOD_SEC, flush_tick)
 end
 
-local _anim
-local _started = false
-local _sampler_on = false
-local _affected = {}
-local _seen_states = {}
-local _seen_motions = {}
-local _seen_xagna = {}
-local _sample_count = 0
-
-local function _count(t)
-    local n = 0
-    for _ in pairs(t) do n = n + 1 end
-    return n
+local function _get_count(tbl)
+    local count = 0
+    for _ in pairs(tbl) do count = count + 1 end
+    return count
 end
 
-local function _mark(t)
-    if t then for k in pairs(t) do _affected[k] = true end end
+local function _add_affected(tbl)
+    if tbl then for key in pairs(tbl) do _affected[key] = true end end
 end
 
 --- Resolves a state to its configured animation entry and that entry's motion for a weapon slot.
@@ -144,11 +125,27 @@ end
 
 local function _log_stats()
     _anim:info("[stats] samples=%d unique_states=%d unique_motions=%d xagna_seen=%d/%d",
-        _sample_count, _count(_seen_states), _count(_seen_motions), _count(_seen_xagna), _count(_affected))
+        _sample_count, _get_count(_seen_states), _get_count(_seen_motions), _get_count(_seen_xagna), _get_count(_affected))
+end
+
+--- Records one nearby NPC's current state and motion; counts it toward the stats totals.
+local function _log_sample(npc)
+    local state = npc and state_mgr.get_state(npc)
+    if not state then return end
+    local anim_name, motion = _resolve_motion(state, npc:active_slot())
+    _sample_count = _sample_count + 1
+    _seen_states[state] = true
+    if motion then _seen_motions[motion] = true end
+    local tag = ""
+    if _affected[state] then _seen_xagna[state] = true tag = " [XAGNA]" end
+    _anim:debug("[sample] id=%d %s state=%s anim=%s motion=%s%s",
+        npc:id(), npc:name(), state, tostring(anim_name), tostring(motion), tag)
+    if _sample_count % STATS_EVERY == 0 then _log_stats() end
 end
 
 --- Re-arming jittered sampler: snapshots the state a few nearby NPCs are in and records it.
-local function sample_tick()
+-- @novalidate(conventions.raw_engine_call, reason:"xagna ships standalone, no xlibs dependency")
+local function select_sample()
     if not _sampler_on then return end
     ResetTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC + math_random(0, SAMPLE_JITTER_SEC))
     local actor = db.actor
@@ -168,19 +165,7 @@ local function sample_tick()
     local total = #near
     local picks = total < SAMPLE_MAX_NPC and total or SAMPLE_MAX_NPC
     for i = 1, picks do
-        local npc = total <= SAMPLE_MAX_NPC and near[i] or near[math_random(total)]
-        local state = npc and state_mgr.get_state(npc)
-        if state then
-            local anim_name, motion = _resolve_motion(state, npc:active_slot())
-            _sample_count = _sample_count + 1
-            _seen_states[state] = true
-            if motion then _seen_motions[motion] = true end
-            local tag = ""
-            if _affected[state] then _seen_xagna[state] = true tag = " [XAGNA]" end
-            _anim:debug("[sample] id=%d %s state=%s anim=%s motion=%s%s",
-                npc:id(), npc:name(), state, tostring(anim_name), tostring(motion), tag)
-            if _sample_count % STATS_EVERY == 0 then _log_stats() end
-        end
+        _log_sample(total <= SAMPLE_MAX_NPC and near[i] or near[math_random(total)])
     end
 end
 
@@ -190,14 +175,14 @@ local function start_sampler()
     _started = true
     _anim = get_logger("xagna_animations.log")
     _anim:set_level("DEBUG")
-    _mark(xagna_core.get_posture_deltas())
-    _mark(xagna_core.get_added_states())
-    _mark(xagna_core.get_keep_entries())
+    _add_affected(xagna_core.get_posture_deltas())
+    _add_affected(xagna_core.get_added_states())
+    _add_affected(xagna_core.get_keep_entries())
     for _, spec in pairs(xagna_core.get_pda_variants()) do _affected[spec.name] = true end
     _anim:info("[sample] animation sampler started (SAMPLED, every %d-%ds, %dm, up to %d NPC)",
         SAMPLE_BASE_SEC, SAMPLE_BASE_SEC + SAMPLE_JITTER_SEC, 50, SAMPLE_MAX_NPC)
     RemoveTimeEvent("xagna_log", "sample")
-    CreateTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC, sample_tick)
+    CreateTimeEvent("xagna_log", "sample", SAMPLE_BASE_SEC, select_sample)
 end
 
 --- Stops the sampler and flushes a final stats line.
@@ -207,7 +192,31 @@ local function stop_sampler()
     _started = false
 end
 
+--- Returns the cached logger for a log filename, creating it on first request.
+--- @cost O(1) amortised; builds a logger on first request, then a table lookup
+function get_logger(outfile)
+    local logger = _loggers[outfile]
+    if not logger then
+        logger = build_logger(outfile)
+        _loggers[outfile] = logger
+    end
+    return logger
+end
+
+_default = get_logger("xagna.log")
+
+function set_log_level(name)
+    _default:set_level(name)
+end
+function set_log_flush(on) _default.flush_on_level = on and LEVELS.DEBUG or LEVELS.ERROR end
+function is_debug() return _default:is_debug() end
+function log_warn(fmt, ...) _default:warn(fmt, ...) end
+function log_info(fmt, ...) _default:info(fmt, ...) end
+function log_debug(fmt, ...) _default:debug(fmt, ...) end
+function flush_log() _default:flush() end
+
 --- Enables or disables the animation sampler; driven by the MCM toggle, independent of the log level.
+--- @cost O(1) to toggle; start_sampler/stop_sampler arm or disarm the sample time event
 function set_sampler_enabled(on)
     _sampler_on = on and true or false
     if _sampler_on then start_sampler() else stop_sampler() end

@@ -2,6 +2,7 @@
 
 local RegisterScriptCallback = RegisterScriptCallback
 
+-- @novalidate(conventions.raw_engine_call, reason:"xagna ships standalone, no xlibs dependency")
 local function get_config(key)
     if not ui_mcm then return nil end
     return ui_mcm.get("xagna/" .. key)
@@ -21,7 +22,16 @@ local function apply_log_flush()
     xagna_log.set_log_flush(get_config("xagna_logging/log_flush") and true or false)
 end
 
+local function log_mcm_settings()
+    xagna_log.log_info("[mcm] hello=%s approach=%s commander=%s idle=%s wounded=%s relaxed=%s level=%s flush=%s sampler=%s",
+        tostring(get_hello_chance()), tostring(get_pda_approach_chance()), tostring(get_pda_commander_chance()),
+        tostring(get_pda_idle_chance()), tostring(is_wounded_standup()), tostring(get_relaxed_idle_mode()),
+        tostring(get_config("xagna_logging/log_level")), tostring(get_config("xagna_logging/log_flush")),
+        tostring(get_config("xagna_logging/sampler")))
+end
+
 --- Behavior chances, read live by the consumers. 0 on a slider disables that behavior.
+--- @cost 1 luabind (ui_mcm.get) per read
 function get_hello_chance()        return get_config("xagna_behavior/hello_approach") or 50 end
 function get_pda_approach_chance()  return get_config("xagna_behavior/pda_approach")  or 15 end
 function get_pda_commander_chance() return get_config("xagna_behavior/pda_commander") or 15 end
@@ -32,15 +42,6 @@ function is_wounded_standup()
     return v
 end
 function get_relaxed_idle_mode() return get_config("xagna_behavior/relaxed_idle") or "2" end
-
---- Logs every MCM setting at INFO on load, as the sibling mods do, so a log names the live config.
-local function log_mcm_settings()
-    xagna_log.log_info("[mcm] hello=%s approach=%s commander=%s idle=%s wounded=%s relaxed=%s level=%s flush=%s sampler=%s",
-        tostring(get_hello_chance()), tostring(get_pda_approach_chance()), tostring(get_pda_commander_chance()),
-        tostring(get_pda_idle_chance()), tostring(is_wounded_standup()), tostring(get_relaxed_idle_mode()),
-        tostring(get_config("xagna_logging/log_level")), tostring(get_config("xagna_logging/log_flush")),
-        tostring(get_config("xagna_logging/sampler")))
-end
 
 function on_mcm_load()
     return {

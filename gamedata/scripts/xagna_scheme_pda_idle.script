@@ -3,8 +3,7 @@
 local math_random, time_global, tostring = math.random, time_global, tostring
 local get_object_squad = get_object_squad
 
--- stype_stalker (modules.script:6). Inlined: at file-scope load the modules namespace may be
--- unresolved, so the bare symbol reads nil and LoadScheme would skip schemes_by_stype registration.
+-- stype_stalker (modules.script:6), inlined because the modules namespace may be nil at file-scope load.
 local STYPE_STALKER = 0
 
 local ACTID = 188501
@@ -101,10 +100,12 @@ function act_xagna_pda_idle:finalize()
     if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d done cooldown=%dms", self.object:id(), COOLDOWN_MS) end
 end
 
+-- @novalidate(reason:"xr_logic scheme-binder interface; name, signature, and export are fixed by the scheme manager, which calls these by name")
 function setup_generic_scheme(npc, ini, scheme, section, stype, temp)
     xr_logic.assign_storage_and_bind(npc, ini, "xagna_pda_idle", section, temp)
 end
 
+-- @novalidate(reason:"xr_logic scheme-binder interface; name, signature, and export are fixed by the scheme manager, which calls these by name")
 function add_to_binder(npc, ini, scheme, section, storage, temp)
     if not npc then return end
     local manager = npc:motivation_action_manager()
@@ -126,6 +127,7 @@ function add_to_binder(npc, ini, scheme, section, storage, temp)
     if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d bound", npc:id()) end
 end
 
+-- @novalidate(reason:"xr_logic scheme-binder interface; name, signature, and export are fixed by the scheme manager, which calls these by name")
 function configure_actions(npc, ini, scheme, section, stype, temp)
     if not npc then return end
     local manager = npc:motivation_action_manager()
@@ -145,8 +147,6 @@ end
 
 if LoadScheme then
     LoadScheme("xagna_scheme_pda_idle", "xagna_pda_idle", STYPE_STALKER)
-    -- Fail loud, not silent: a nil stype registers schemes[] but skips schemes_by_stype[], so the
-    -- scheme binds to nobody with no error. Verify it entered the generic-bind list, warn if not.
     local by_stype = _G.schemes_by_stype and _G.schemes_by_stype[STYPE_STALKER]
     if not (by_stype and by_stype["xagna_pda_idle"]) then
         xagna_log.log_warn("[pda] scheme did NOT register in schemes_by_stype[%d]; it will bind to no NPC", STYPE_STALKER)

@@ -7,25 +7,23 @@ local PROP_IDLE    = { maxidle = 5, sumidle = 3, rnd = 80 }
 
 local PDA_DRAW = { "norm_torso_pda_draw_1", "norm_torso_pda_idle_1", "norm_torso_pda_holster_1" }
 
--- Slot-0 into pieces the approach gate composes: the beckon greeting, the PDA draw-hold-holster with
--- its device attach/detach, and the lone detach used as the out of a PDA-carrying variant.
+-- Slot-0 into pieces the approach gate composes: beckon greeting, PDA draw-hold-holster, lone detach.
 local BECKON  = { "norm_torso_0_gest_beckoning_1", "idle_0_idle_0" }
 local PDA_SEQ = { { a = "device_pda" }, PDA_DRAW[1], PDA_DRAW[2], PDA_DRAW[3], { d = "device_pda" } }
 local DETACH  = { { d = "device_pda" } }
 
-local function _concat(a, b)
-    local t = {}
-    for i = 1, #a do t[#t + 1] = a[i] end
-    for i = 1, #b do t[#t + 1] = b[i] end
-    return t
+local function _build_list(a, b)
+    local result = {}
+    for i = 1, #a do result[#result + 1] = a[i] end
+    for i = 1, #b do result[#result + 1] = b[i] end
+    return result
 end
 
-local function punch_slot(index)
+local function build_punch_slot(index)
     return { "free_facer_" .. index, { f = xr_effects.actor_punch }, "free_facer_" .. index, { f = xr_effects.clearAbuse } }
 end
 
--- Sentry idle: slots 1/2/4/8/9 play the chasovoy look-around set, the rest a plain idle. Fixes
--- vanilla's slot-9 idle pointing at slot 2. Chemzs is still tuning which slots get chasovoy.
+-- Sentry idle: slots 1/2/4/8/9 play the chasovoy look-around set, the rest a plain idle.
 local IDLE_CHASOVOY = {
     prop = PROP_IDLE,
     into = nil,
@@ -47,7 +45,6 @@ local IDLE_CHASOVOY = {
 }
 
 -- Listening/caution: slots 3 and 10 fall back to a plain idle, the rest play the prisluh set.
--- Chemzs is still tuning the in/out.
 local CAUTION = {
     prop = PROP_IDLE,
     into = {
@@ -71,6 +68,7 @@ local CAUTION = {
 }
 
 --- Whole animation-list entries kept from xAGNA (swaps that change the motion, not the action).
+--- @cost O(1); builds and returns a literal table
 function get_keep_entries()
     local uni_medkit = {
         prop = PROP_ONESHOT,
@@ -83,14 +81,14 @@ function get_keep_entries()
         punch = {
             prop = PROP_PUNCH,
             into = {
-                [0]  = punch_slot(0),
-                [1]  = punch_slot(1),
-                [2]  = punch_slot(2),
-                [3]  = punch_slot(3),
-                [4]  = punch_slot(4),
-                [8]  = punch_slot(8),
-                [9]  = punch_slot(9),
-                [10] = punch_slot(10),
+                [0]  = build_punch_slot(0),
+                [1]  = build_punch_slot(1),
+                [2]  = build_punch_slot(2),
+                [3]  = build_punch_slot(3),
+                [4]  = build_punch_slot(4),
+                [8]  = build_punch_slot(8),
+                [9]  = build_punch_slot(9),
+                [10] = build_punch_slot(10),
             },
             out  = nil,
             idle = nil,
@@ -134,8 +132,6 @@ function get_keep_entries()
             idle = { [0] = "wounded_idle_0_new" },
             rnd  = nil,
         },
-        -- Chemzs's bloodsucker-search alert set (WIP; he is still tuning the in/out). into/out/rnd are
-        -- per-slot motion lists; idle is one motion per slot.
         bloodsucker_search = {
             prop = { maxidle = 0, sumidle = 0, rnd = 100 },
             into = {
@@ -161,19 +157,20 @@ function get_keep_entries()
     }
 end
 
---- PDA-draw variant specs. Each builds a copy of a vanilla state's animation entry with a composed
---- slot-0 into, so the approach gate can redirect an NPC to the hello, the PDA, both, or (a commander)
---- the PDA alone, without wiping the base entry's idle/rnd. zzz builds them from the live vanilla entry.
+--- PDA-draw variant specs, each a vanilla base state plus a composed slot-0 into.
+--- zzz builds the live copies, leaving each base entry idle and rnd intact.
+--- @cost O(1); builds and returns a literal table
 function get_pda_variants()
     return {
         { name = "xagna_talk_h",   base = "talk_default", into0 = BECKON,                  out0 = nil },
         { name = "xagna_talk_p",   base = "talk_default", into0 = PDA_SEQ,                  out0 = DETACH },
-        { name = "xagna_talk_hp",  base = "talk_default", into0 = _concat(BECKON, PDA_SEQ), out0 = DETACH },
+        { name = "xagna_talk_hp",  base = "talk_default", into0 = _build_list(BECKON, PDA_SEQ), out0 = DETACH },
         { name = "xagna_choose_p", base = "choose",       into0 = PDA_SEQ,                  out0 = DETACH },
     }
 end
 
---- Standing-posture deltas for the states whose motion is a kept standing swap (free mental requires standing body).
+--- Standing-posture deltas for the states whose motion is a kept standing swap.
+--- @cost O(1); builds and returns a literal table
 function get_posture_deltas()
     local upright = { mental = anim.free, bodystate = move.standing }
     local upright_strapped = { weapon = "strapped", mental = anim.free, bodystate = move.standing }
@@ -194,6 +191,7 @@ function get_posture_deltas()
 end
 
 --- New full-body states this mod adds (not vanilla): the standing PDA-use state the idle scheme drives.
+--- @cost O(1); builds and returns a literal table
 function get_added_states()
     return {
         xagna_use_pda = {
