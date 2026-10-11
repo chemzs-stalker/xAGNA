@@ -34,13 +34,13 @@ local IDLE_CHASOVOY = {
     },
     rnd = {
         [0]  = { "idle_0_idle_1", "idle_0_idle_1", "idle_0_idle_1", "idle_0_idle_1", "idle_0_idle_1" },
-        [1]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
-        [2]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
-        [3]  = { "idle_3_idle_0", "idle_3_idle_0", "idle_3_idle_0", "idle_3_idle_0", "idle_3_idle_0" },
-        [4]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
-        [8]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
-        [9]  = { "chasovoy_0", "chasovoy_1", "chasovoy_2", "chasovoy_3", "chasovoy_4" },
-        [10] = { "idle_10_idle_0", "idle_10_idle_0", "idle_10_idle_0", "idle_10_idle_0", "idle_10_idle_0" },
+        [1]  = { "idle_1_idle_0", "idle_1_idle_1", "idle_1_idle_2", "idle_1_idle_3", "idle_1_idle_2" },
+        [2]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
+        [3]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
+        [4]  = { "chasovoy_4", "idle_4_idle_1", "chasovoy_2", "idle_4_idle_1", "idle_4_idle_1" },
+        [8]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
+        [9]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
+        [10] = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
     },
 }
 
