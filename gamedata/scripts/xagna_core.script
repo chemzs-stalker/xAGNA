@@ -135,14 +135,14 @@ function get_keep_entries()
         bloodsucker_search = {
             prop = { maxidle = 0, sumidle = 0, rnd = 100 },
             into = {
-                [1] = { "prisluh_1_idle_2" }, [2] = { "spetsnaz_4" }, [3] = { "prisluh_3_idle_0" }, [4] = { "prisluh_4_idle_0" },
-                [8] = { "norm_alert_in_0" }, [9] = { "prisluh_3_idle_0" }, [10] = { "spetsnaz_4" },
+                [1] = { "prisluh_1_idle_2" }, [2] = { "spetsnaz_5" }, [3] = { "spetsnaz_4" }, [4] = { "prisluh_4_idle_0" },
+                [8] = { "spetsnaz_6" }, [9] = { "spetsnaz_6" }, [10] = { "spetsnaz_4" },
             },
-            idle = { [1] = "prisluh_1_idle_1", [2] = "spetsnaz_4", [3] = "prisluh_3_idle_2", [4] = "prisluh_4_idle_4", [8] = "norm_alert_idle_0", [9] = "prisluh_3_idle_3", [10] = "spetsnaz_4" },
-            rnd  = { [2] = { "spetsnaz_4", "spetsnaz_5", "spetsnaz_6" }, [8] = { "norm_alert_idle_0", "norm_alert_idle_1", "norm_alert_idle_3" } },
+            idle = nil,
+            rnd  = nil,
             out  = {
-                [1] = { "prisluh_1_idle_4" }, [2] = { "spetsnaz_7" }, [3] = { "prisluh_3_idle_5" }, [4] = { "prisluh_4_idle_5" },
-                [8] = { "norm_alert_out_0" }, [9] = { "prisluh_3_idle_5" }, [10] = { "spetsnaz_7" },
+                [1] = { "prisluh_1_idle_4" }, [2] = { "spetsnaz_5" }, [3] = { "spetsnaz_4" }, [4] = { "prisluh_4_idle_0" },
+                [8] = { "spetsnaz_6" }, [9] = { "spetsnaz_6" }, [10] = { "spetsnaz_4" },
             },
         },
         idle_chasovoy = IDLE_CHASOVOY,
