@@ -48,22 +48,22 @@ local IDLE_CHASOVOY = {
 local CAUTION = {
     prop = PROP_IDLE,
     into = {
-        [0] = { "prisluh_0_in" }, [1] = { "prisluh_1_in" }, [2] = { "prisluh_2_in" }, [3] = { "idle_3_idle_0" },
-        [4] = { "prisluh_4_in" }, [8] = { "prisluh_8_in" }, [9] = { "prisluh_9_in" }, [10] = { "idle_10_idle_0" },
+        [0] = { "prisluh_0_in" }, [1] = { "prisluh_1_in" }, [2] = { "prisluh_2_in" }, [3] = { "prisluh_2_in" },
+        [4] = { "prisluh_4_in" }, [8] = { "prisluh_2_in" }, [9] = { "prisluh_2_in" }, [10] = { "prisluh_2_in" },
     },
     out = {
-        [0] = { "prisluh_0_out" }, [1] = { "prisluh_1_out" }, [2] = { "prisluh_2_out" }, [3] = { "idle_3_idle_0" },
-        [4] = { "prisluh_4_out" }, [8] = { "prisluh_8_out" }, [9] = { "prisluh_9_out" }, [10] = { "idle_10_idle_0" },
+        [0] = { "prisluh_0_out" }, [1] = { "prisluh_1_out" }, [2] = { "prisluh_2_out" }, [3] = { "prisluh_2_out" },
+        [4] = { "prisluh_4_out" }, [8] = { "prisluh_2_out" }, [9] = { "prisluh_2_out" }, [10] = { "prisluh_2_out" },
     },
     idle = {
-        [0] = "prisluh_0_1", [1] = "prisluh_1_1", [2] = "prisluh_2_1", [3] = "idle_3_idle_0",
-        [4] = "prisluh_4_1", [8] = "prisluh_8_1", [9] = "prisluh_9_1", [10] = "idle_10_idle_0",
+        [0] = "prisluh_0_1", [1] = "prisluh_1_1", [2] = "prisluh_2_1", [3] = "prisluh_2_1",
+        [4] = "prisluh_4_1", [8] = "prisluh_2_1", [9] = "prisluh_2_1", [10] = "prisluh_2_1",
     },
     rnd = {
         [0] = { "prisluh_0_0", "prisluh_0_2" }, [1] = { "prisluh_1_0", "prisluh_1_2" },
-        [2] = { "prisluh_2_0", "prisluh_2_2" }, [3] = { "idle_3_idle_0", "idle_3_idle_0" },
-        [4] = { "prisluh_4_0", "prisluh_4_2" }, [8] = { "prisluh_8_0", "prisluh_8_2" },
-        [9] = { "prisluh_9_0", "prisluh_9_2" }, [10] = { "idle_10_idle_0", "idle_10_idle_0" },
+        [2] = { "prisluh_2_0", "prisluh_2_2" }, [3] = { "prisluh_2_0", "prisluh_2_2" },
+        [4] = { "prisluh_4_0", "prisluh_4_2" }, [8] = { "prisluh_2_0", "prisluh_2_2" },
+        [9] = { "prisluh_2_0", "prisluh_2_2" }, [10] = { "prisluh_2_0", "prisluh_2_2" },
     },
 }
 
