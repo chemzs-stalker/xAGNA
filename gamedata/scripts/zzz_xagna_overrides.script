@@ -1,6 +1,6 @@
 --- zzz_xagna_overrides: applies the xAGNA companion edits onto vanilla at game start.
 
-local pairs, math_random, type, RegisterScriptCallback = pairs, math.random, type, RegisterScriptCallback
+local pairs, math_random, type = pairs, math.random, type
 
 local WOUNDED_MEDKITS = { "medkit_script", "medkit", "medkit_army", "medkit_scientic" }
 local _wounded_exit_wrapped = false
@@ -206,19 +206,17 @@ local function apply_approach_gate()
     if xagna_log.is_debug() then xagna_log.log_debug("[overlay] approach gate wrapped") end
 end
 
---- Sets the demonized npc_relaxed_idle_mode cvar from the MCM list.
---- Probed, so an older exe without the cvar stays inert and the compatibility floor does not move.
+--- Pins the demonized npc_relaxed_idle_mode cvar to 0 (vanilla: relaxed NPCs share the player idle).
+--- Probed, so an older exe without the cvar stays inert; absent means the engine is already vanilla.
 local function apply_relaxed_idle_cvar()
     local console = get_console()
     local present = console and type(console.get_string) == "function"
         and console:get_string("npc_relaxed_idle_mode") ~= nil
     if not present then
-        xagna_log.log_warn("npc_relaxed_idle_mode absent (needs latest demonized), relaxed-idle mode skipped")
         return
     end
-    local mode = xagna_mcm.get_relaxed_idle_mode()
-    console:execute("npc_relaxed_idle_mode " .. mode)
-    xagna_log.log_info("npc_relaxed_idle_mode set to %s", mode)
+    console:execute("npc_relaxed_idle_mode 0")
+    xagna_log.log_info("npc_relaxed_idle_mode pinned to 0 (vanilla)")
 end
 
 function on_game_start()
@@ -229,7 +227,6 @@ function on_game_start()
     apply_wounded_exit()
     apply_approach_gate()
     apply_relaxed_idle_cvar()
-    RegisterScriptCallback("on_option_change", apply_relaxed_idle_cvar)
     xagna_log.log_info("game start: %s animation entries, %s postures, %s states, %s pda variants applied",
         animations, postures, added, variants)
     xagna_log.flush_log()
