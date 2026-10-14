@@ -38,7 +38,7 @@ local IDLE_CHASOVOY = {
         [2]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
         [3]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
         [4]  = { "chasovoy_4", "idle_4_idle_1", "chasovoy_2", "idle_4_idle_1", "idle_4_idle_1" },
-        [8]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
+        [8]  = { "idle_8_idle_0", "idle_8_idle_1", "idle_8_idle_2", "idle_8_idle_3", "idle_8_idle_4" },
         [9]  = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
         [10] = { "chasovoy_0", "chasovoy_2", "chasovoy_1", "chasovoy_4", "chasovoy_1" },
     },
@@ -49,20 +49,20 @@ local CAUTION = {
     prop = PROP_IDLE,
     into = {
         [0] = { "prisluh_0_in" }, [1] = { "prisluh_1_in" }, [2] = { "prisluh_2_in" }, [3] = { "prisluh_2_in" },
-        [4] = { "prisluh_4_in" }, [8] = { "prisluh_2_in" }, [9] = { "prisluh_2_in" }, [10] = { "prisluh_2_in" },
+        [4] = { "prisluh_4_in" }, [8] = { "prisluh_8_in" }, [9] = { "prisluh_2_in" }, [10] = { "prisluh_2_in" },
     },
     out = {
         [0] = { "prisluh_0_out" }, [1] = { "prisluh_1_out" }, [2] = { "prisluh_2_out" }, [3] = { "prisluh_2_out" },
-        [4] = { "prisluh_4_out" }, [8] = { "prisluh_2_out" }, [9] = { "prisluh_2_out" }, [10] = { "prisluh_2_out" },
+        [4] = { "prisluh_4_out" }, [8] = { "prisluh_8_out" }, [9] = { "prisluh_2_out" }, [10] = { "prisluh_2_out" },
     },
     idle = {
         [0] = "prisluh_0_1", [1] = "prisluh_1_1", [2] = "prisluh_2_1", [3] = "prisluh_2_1",
-        [4] = "prisluh_4_1", [8] = "prisluh_2_1", [9] = "prisluh_2_1", [10] = "prisluh_2_1",
+        [4] = "prisluh_4_1", [8] = "prisluh_8_0", [9] = "prisluh_2_1", [10] = "prisluh_2_1",
     },
     rnd = {
         [0] = { "prisluh_0_0", "prisluh_0_2" }, [1] = { "prisluh_1_0", "prisluh_1_2" },
         [2] = { "prisluh_2_0", "prisluh_2_2" }, [3] = { "prisluh_2_0", "prisluh_2_2" },
-        [4] = { "prisluh_4_0", "prisluh_4_2" }, [8] = { "prisluh_2_0", "prisluh_2_2" },
+        [4] = { "prisluh_4_0", "prisluh_4_2" }, [8] = { "prisluh_8_2", "prisluh_8_0" },
         [9] = { "prisluh_2_0", "prisluh_2_2" }, [10] = { "prisluh_2_0", "prisluh_2_2" },
     },
 }
@@ -136,13 +136,13 @@ function get_keep_entries()
             prop = { maxidle = 0, sumidle = 0, rnd = 100 },
             into = {
                 [1] = { "prisluh_1_idle_2" }, [2] = { "spetsnaz_5" }, [3] = { "spetsnaz_4" }, [4] = { "prisluh_4_idle_0" },
-                [8] = { "spetsnaz_6" }, [9] = { "spetsnaz_6" }, [10] = { "spetsnaz_4" },
+                [8] = { "prisluh_8_0" }, [9] = { "spetsnaz_6" }, [10] = { "spetsnaz_4" },
             },
             idle = nil,
             rnd  = nil,
             out  = {
                 [1] = { "prisluh_1_idle_4" }, [2] = { "spetsnaz_5" }, [3] = { "spetsnaz_4" }, [4] = { "prisluh_4_idle_0" },
-                [8] = { "spetsnaz_6" }, [9] = { "spetsnaz_6" }, [10] = { "spetsnaz_4" },
+                [8] = { "prisluh_8_2" }, [9] = { "spetsnaz_6" }, [10] = { "spetsnaz_4" },
             },
         },
         idle_chasovoy = IDLE_CHASOVOY,
