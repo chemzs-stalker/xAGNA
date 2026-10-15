@@ -1,6 +1,6 @@
 1.05
 
-  Summary: additive patch, idle PDA reworked, companion and patrol freeze fixed, wounded stand-up, poses restored, relaxed idle pose option, MCM config
+  Summary: additive patch, idle PDA reworked, companion and patrol freeze fixed, wounded stand-up, poses restored, relaxed idle pose option, wall-facing fix, MCM config
 
   First release of this fork of Chemzs's xAGNA. Every entry below is a change against that original.
 
@@ -19,9 +19,14 @@
       The original drew it on the shared idle. Every NPC pulled one out, and the multi-step draw froze them in place.
       That blocked patrol and companions. The idle is instant again.
       Now only standing, calm, out-of-combat NPCs near you occasionally take one out. Never companions, dropped the moment danger appears.
+      It no longer takes one out of an NPC in a scripted animation, a smart cover, a patrol, or a story role.
     - Wounded NPCs play a stand-up animation as they recover, instead of snapping upright.
     - The greeting and PDA an NPC plays when you walk up to a commander no longer fire on every approach.
       Each rolls its own chance, so most approaches are a plain greeting.
+
+  Vanilla fixes
+    - An NPC left standing and facing a wall turns to the open side instead of staring at it. Only plain
+      standing wall poses near you are turned. Seated, leaning, counter, and campfire poses are untouched.
 
   Animations restored
     - Sentry and listening NPCs play a tuned set per weapon slot: a look-around or listening pose on
@@ -38,6 +43,7 @@
   MCM
     - Added a Behavior page: chances for the greeting, the PDA on approach, a commander's PDA, and an
       idle NPC's PDA, plus a wounded stand-up toggle and the relaxed idle pose choice. A chance slider at 0 turns it off.
+    - Added a Vanilla fixes page with the wall-facing toggle.
     - Added a Log level control and an immediate-flush toggle for live tracing.
     - Added an Animation sampling toggle that records the states NPCs actually play to xagna_animations.log, for confirming the mod's motions fire.
 

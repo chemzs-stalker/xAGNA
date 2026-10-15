@@ -18,6 +18,9 @@ local HOLD_MS          = 6000
 
 local PDA_STATE = "xagna_use_pda"
 
+-- Scripted-pose/patrol schemes are excluded from the PDA draw; idle/standing/walking NPCs stay in.
+local PDA_BLOCKED_SCHEMES = { animpoint = true, smartcover = true, remark = true, beh = true }
+
 local function is_companion(npc)
     local squad = get_object_squad(npc)
     return squad ~= nil and axr_companions.companion_squads[squad.id] ~= nil
@@ -33,6 +36,10 @@ local function get_skip_reason(npc)
     if npc:movement_type() ~= move.stand then return "moving" end
     if npc:body_state() ~= move.standing then return "crouch" end
     if npc:in_smart_cover() then return "smart_cover" end
+    local st = db.storage[npc:id()]
+    local scheme = st and st.active_scheme
+    if scheme and PDA_BLOCKED_SCHEMES[scheme] then return "scheme=" .. scheme end
+    if get_object_story_id(npc:id()) ~= nil then return "story" end
     local actor = db.actor
     if not actor then return "no_actor" end
     if actor:position():distance_to_sqr(npc:position()) > ACTOR_RADIUS_SQR then return "far" end
