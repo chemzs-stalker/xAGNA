@@ -29,9 +29,6 @@
     - Heavy-wounded variant 3 keeps its own distinct pose again.
     - Standing smoke plays the smoking animation again.
 
-  Animations kept
-    - The free-hand punch, the commander, guard and talk poses, the standing medical and wounded postures, and the re-animated motion set are unchanged.
-
   MCM
     - Added a Behavior page: chances for the greeting, the PDA on approach, a commander's PDA, and an idle NPC's PDA, plus a wounded stand-up toggle and the relaxed idle pose choice. A chance slider
       at 0 turns it off.
