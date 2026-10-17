@@ -12,8 +12,8 @@ The pack re-animates 2087 motions and adds 14 new action motions and 2 new cover
 
 `xagna_core.script` holds the data: the kept animation entries, the PDA-draw variant specs, the standing-posture deltas, and the added states.
 This is the file Chemzs edits to change motions. It carries no logic beyond returning those tables.
-`xagna_mcm.script` registers the Behavior, Vanilla fixes, and Logging controls and exposes the settings to the rest of the mod. It also logs them at INFO on load.
-The Behavior controls are the hello, approach-PDA, commander-PDA, and idle-PDA chances, and the wounded stand-up toggle. The Vanilla fixes page holds the wall-facing toggle.
+`xagna_mcm.script` registers the Behavior and Logging controls and exposes the settings to the rest of the mod. It also logs them at INFO on load.
+The Behavior controls are the hello, approach-PDA, commander-PDA, and idle-PDA chances, and the wounded stand-up toggle.
 `xagna_log.script` is the leveled logger and the animation sampler, writing to `xagna.log` and `xagna_animations.log`.
 `zzz_xagna_overrides.script` applies the data at `on_game_start` and runs last so its edits win.
 
@@ -30,10 +30,6 @@ Every chance is an MCM slider, and 0 disables that behavior.
 An into-sequence plays whole on state entry, so the approach PDA cannot be gated in the animation table.
 `zzz_xagna_overrides.script` keeps `talk_default` and `choose` vanilla and builds PDA-carrying variant states from the live vanilla entries.
 A wrap of `state_mgr.set_state` rolls once per approach and redirects the NPC to the matching variant.
-
-A timed scan turns a standing NPC left facing a wall back to the open side.
-It reads the rendered facing and casts a short static ray, flipping only a plain standing wall pose.
-A seated, table, or corner-boxed pose is left alone.
 
 The mod sets `npc_relaxed_idle_mode` to 0, the vanilla pose, on an exe that carries the cvar, and probes for it so an older exe is left alone.
 

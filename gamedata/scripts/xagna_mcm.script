@@ -23,9 +23,9 @@ local function apply_log_flush()
 end
 
 local function log_mcm_settings()
-    xagna_log.log_info("[mcm] hello=%s approach=%s commander=%s idle=%s wounded=%s wall=%s level=%s flush=%s sampler=%s",
+    xagna_log.log_info("[mcm] hello=%s approach=%s commander=%s idle=%s wounded=%s level=%s flush=%s sampler=%s",
         tostring(get_hello_chance()), tostring(get_pda_approach_chance()), tostring(get_pda_commander_chance()),
-        tostring(get_pda_idle_chance()), tostring(is_wounded_standup()), tostring(is_wall_facing()),
+        tostring(get_pda_idle_chance()), tostring(is_wounded_standup()),
         tostring(get_config("xagna_logging/log_level")), tostring(get_config("xagna_logging/log_flush")),
         tostring(get_config("xagna_logging/sampler")))
 end
@@ -41,12 +41,6 @@ function is_wounded_standup()
     if v == nil then return true end
     return v
 end
-function is_wall_facing()
-    local v = get_config("xagna_fixes/wall_facing")
-    if v == nil then return true end
-    return v
-end
-
 function on_mcm_load()
     return {
         id = "xagna",
@@ -60,13 +54,6 @@ function on_mcm_load()
                     { id = "pda_commander",   type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_commander" },
                     { id = "pda_idle",        type = "track", val = 2, min = 0, max = 100, step = 5, def = 15, hint = "xagna_pda_idle" },
                     { id = "wounded_standup", type = "check", val = 1, def = true, hint = "xagna_wounded_standup" },
-                },
-            },
-            {
-                id = "xagna_fixes",
-                sh = true,
-                gr = {
-                    { id = "wall_facing", type = "check", val = 1, def = true, hint = "xagna_wall_facing" },
                 },
             },
             {

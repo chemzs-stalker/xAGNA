@@ -1,7 +1,6 @@
 --- zzz_xagna_overrides: applies the xAGNA companion edits onto vanilla at game start.
 
-local pairs, math_random, type, tostring = pairs, math.random, type, tostring
-local ray_pick, vector, IsStalker, level = ray_pick, vector, IsStalker, level
+local pairs, math_random, type = pairs, math.random, type
 
 local WOUNDED_MEDKITS = { "medkit_script", "medkit", "medkit_army", "medkit_scientic" }
 local _wounded_exit_wrapped = false
@@ -11,18 +10,6 @@ local APPROACH_STATES = { [CHOOSE_STATE] = true, talk_default = true }
 local _set_state_wrapped = false
 local _approach_decided = {}
 local _orig_set_state
-
--- Collision-DB static flag: walls and world geometry (xprops.script:9-10).
-local F_STATICS = 2
-local FACE_SCAN_SEC = 3
-local FACE_R2 = 50 * 50
-local WALL_RANGE = 1.0
-local RAY_HEIGHT = 1.6
-local SCHEME_ANIMPOINT = "animpoint"
--- Only plain standing wall-stares rotate cleanly; table/lean/sit poses break when flipped, so skip them.
-local SAFE_FLIP_ANIMS = { animpoint_stay_wall = true, zat_b14_stay_wall = true, drunk_behindwall = true }
--- One shared ray, lazily created; the single-threaded engine finishes each cast before the next.
-local _face_ray
 
 local function apply_animation_edits()
     if not state_mgr_animation_list then
@@ -232,93 +219,6 @@ local function apply_relaxed_idle_cvar()
     xagna_log.log_info("npc_relaxed_idle_mode pinned to 0 (vanilla)")
 end
 
--- @novalidate(conventions.raw_engine_call, reason:"xagna ships standalone, no xlibs dependency")
-local function is_wall_ahead(pos, dir)
-    if not _face_ray then _face_ray = ray_pick() end
-    local ray = _face_ray
-    ray:set_flags(F_STATICS)
-    ray:set_range(WALL_RANGE)
-    ray:set_position(pos)
-    ray:set_direction(dir)
-    if not ray:query() then return false end
-    local dist = ray:get_distance()
-    return dist ~= nil and dist > 0.001 and dist <= WALL_RANGE
-end
-
---- Logs one facing outcome for an animpoint NPC: its id, section, display name, cover, and verdict.
-local function log_facing(npc, id, cover, verdict)
-    xagna_log.log_debug("[facing] id=%s %s '%s' cover=%s %s",
-        tostring(id), npc:name(), tostring(npc:character_name()), tostring(cover), verdict)
-end
-
---- True when the animpoint plays a plain standing wall pose that rotates cleanly (not a table/lean/sit pose).
-local function is_standing_wall_pose(sst)
-    local anims = sst.avail_animations
-    if not anims then return false end
-    for _, name in pairs(anims) do
-        if SAFE_FLIP_ANIMS[name] then return true end
-    end
-    return false
-end
-
---- Turns a near, online animpoint NPC that is staring at a wall to the open side; a corner-boxed NPC is left as is.
-local function try_face_npc(npc, id, apos)
-    if not (npc and IsStalker(npc) and npc:alive()) then return end
-    if npc:position():distance_to_sqr(apos) > FACE_R2 then return end
-    local st = db.storage[id]
-    if not (st and st.active_scheme == SCHEME_ANIMPOINT) then return end
-    local sst = st.animpoint
-    local ap = sst and sst.animpoint
-    if not (ap and ap.vertex_position) then return end
-    local facing = npc:direction()
-    local fwd = vector():set(facing.x, 0, facing.z)
-    if fwd:magnitude() < 0.1 then return end
-    fwd:normalize()
-    local pos = npc:position()
-    local eye = vector():set(pos.x, pos.y + RAY_HEIGHT, pos.z)
-    local dbg = xagna_log.is_debug()
-    if not is_wall_ahead(eye, fwd) then
-        if dbg then log_facing(npc, id, sst.cover_name, "open no-flip") end
-        return
-    end
-    if not is_standing_wall_pose(sst) then
-        if dbg then log_facing(npc, id, sst.cover_name, "wall non-standing skip") end
-        return
-    end
-    local flip = vector():set(-fwd.x, 0, -fwd.z)
-    flip:normalize()
-    if is_wall_ahead(eye, flip) then
-        if dbg then log_facing(npc, id, sst.cover_name, "corner-skip") end
-        return
-    end
-    sst.direction = flip
-    ap.smart_direction = flip
-    ap.look_position = vector():set(pos.x + 10 * flip.x, pos.y, pos.z + 10 * flip.z)
-    ap:stop()
-    if dbg then log_facing(npc, id, sst.cover_name, "FLIPPED off wall") end
-end
-
---- Re-arming scan: turns online animpoint NPCs within 50m off any wall they face.
--- @novalidate(conventions.raw_engine_call, reason:"xagna ships standalone, no xlibs dependency")
-local function update_facing()
-    ResetTimeEvent("xagna_facing", "scan", FACE_SCAN_SEC)
-    if not xagna_mcm.is_wall_facing() then return end
-    local actor = db.actor
-    if not actor then return end
-    local apos = actor:position()
-    local list = db.OnlineStalkers or {}
-    for i = 1, #list do
-        local id = list[i]
-        try_face_npc(level.object_by_id(id), id, apos)
-    end
-end
-
-local function start_facing_scan()
-    RemoveTimeEvent("xagna_facing", "scan")
-    CreateTimeEvent("xagna_facing", "scan", FACE_SCAN_SEC, update_facing)
-    if xagna_log.is_debug() then xagna_log.log_debug("[facing] wall-scan started") end
-end
-
 function on_game_start()
     local animations = apply_animation_edits()
     local postures = apply_posture_edits()
@@ -327,7 +227,6 @@ function on_game_start()
     apply_wounded_exit()
     apply_approach_gate()
     apply_relaxed_idle_cvar()
-    start_facing_scan()
     xagna_log.log_info("game start: %s animation entries, %s postures, %s states, %s pda variants applied",
         animations, postures, added, variants)
     xagna_log.flush_log()
