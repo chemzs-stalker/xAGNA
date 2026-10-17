@@ -16,7 +16,7 @@ local _orig_set_state
 local F_STATICS = 2
 local FACE_SCAN_SEC = 3
 local FACE_R2 = 50 * 50
-local WALL_RANGE = 0.6
+local WALL_RANGE = 1.0
 local RAY_HEIGHT = 1.6
 local SCHEME_ANIMPOINT = "animpoint"
 -- Only plain standing wall-stares rotate cleanly; table/lean/sit poses break when flipped, so skip them.
@@ -270,8 +270,7 @@ local function try_face_npc(npc, id, apos)
     local sst = st.animpoint
     local ap = sst and sst.animpoint
     if not (ap and ap.vertex_position) then return end
-    local facing = ap.smart_direction
-    if not facing then return end
+    local facing = npc:direction()
     local fwd = vector():set(facing.x, 0, facing.z)
     if fwd:magnitude() < 0.1 then return end
     fwd:normalize()
@@ -292,8 +291,10 @@ local function try_face_npc(npc, id, apos)
         if dbg then log_facing(npc, id, sst.cover_name, "corner-skip") end
         return
     end
+    sst.direction = flip
     ap.smart_direction = flip
     ap.look_position = vector():set(pos.x + 10 * flip.x, pos.y, pos.z + 10 * flip.z)
+    ap:stop()
     if dbg then log_facing(npc, id, sst.cover_name, "FLIPPED off wall") end
 end
 
