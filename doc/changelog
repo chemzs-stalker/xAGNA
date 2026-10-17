@@ -16,11 +16,10 @@
       It no longer takes one out of an NPC in a scripted animation, a smart cover, a patrol, or a story role.
     - Wounded NPCs play a stand-up animation as they recover, instead of snapping upright.
     - The greeting and PDA an NPC plays when you walk up to a commander no longer fire on every approach. Each rolls its own chance, so most approaches are a plain greeting.
-    - Every chance is a slider, and a slider at 0 turns that behavior off. A wounded stand-up toggle sits alongside them.
 
   Vanilla fixes
     - An NPC left standing and facing a wall turns to the open side instead of staring at it. Only plain standing wall poses near you are turned. Seated, leaning, counter,
-      and campfire poses are untouched. The toggle for it lives here.
+      and campfire poses are untouched.
 
   Logging
     - Added a Log level control and an immediate-flush toggle for live tracing.
