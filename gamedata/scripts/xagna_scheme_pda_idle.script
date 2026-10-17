@@ -13,13 +13,18 @@ actid = ACTID
 
 local ACTOR_RADIUS_SQR = 50 * 50
 local COOLDOWN_MS      = 180000
-local CHECK_EVERY_MS   = 5000
+local CHECK_EVERY_MS   = 10000
 local HOLD_MS          = 6000
+local RECHECK_MS       = 1000
 
 local PDA_STATE = "xagna_use_pda"
 
 -- Scripted-pose/patrol schemes are excluded from the PDA draw; idle/standing/walking NPCs stay in.
 local PDA_BLOCKED_SCHEMES = { animpoint = true, smartcover = true, remark = true, beh = true }
+
+-- Mindless community and the decoy visual: neither draws a PDA (gated out of idle actions as in vanilla).
+local ZOMBIED_COMMUNITY = "zombied"
+local DECOY_SECTION = "actor_visual_stalker"
 
 local function is_companion(npc)
     local squad = get_object_squad(npc)
@@ -29,6 +34,11 @@ end
 --- Returns nil when the NPC may pull out a PDA, else the reason it is skipped (for tracing).
 local function get_skip_reason(npc)
     if not npc:alive() then return "dead" end
+    local actor = db.actor
+    if not actor then return "no_actor" end
+    if actor:position():distance_to_sqr(npc:position()) > ACTOR_RADIUS_SQR then return "far" end
+    if character_community(npc) == ZOMBIED_COMMUNITY then return "zombied" end
+    if npc:section() == DECOY_SECTION then return "decoy" end
     if IsWounded(npc) then return "wounded" end
     if npc:best_enemy() then return "enemy" end
     if xr_danger.has_danger(npc) then return "danger" end
@@ -40,9 +50,6 @@ local function get_skip_reason(npc)
     local scheme = st and st.active_scheme
     if scheme and PDA_BLOCKED_SCHEMES[scheme] then return "scheme=" .. scheme end
     if get_object_story_id(npc:id()) ~= nil then return "story" end
-    local actor = db.actor
-    if not actor then return "no_actor" end
-    if actor:position():distance_to_sqr(npc:position()) > ACTOR_RADIUS_SQR then return "far" end
     if is_companion(npc) then return "companion" end
     return nil
 end
@@ -93,8 +100,19 @@ end
 function act_xagna_pda_idle:execute()
     action_base.execute(self)
     local npc = self.object
-    local reason = get_skip_reason(npc)
-    local expired = time_global() > self.st.until_ms
+    local tg = time_global()
+    local expired = tg > self.st.until_ms
+    local reason
+    if not expired then
+        if npc:best_enemy() then
+            reason = "enemy"
+        elseif xr_danger.has_danger(npc) then
+            reason = "danger"
+        elseif not self.st.next_recheck or tg >= self.st.next_recheck then
+            self.st.next_recheck = tg + RECHECK_MS
+            reason = get_skip_reason(npc)
+        end
+    end
     if expired or reason then
         if xagna_log.is_debug() then xagna_log.log_debug("[pda] id=%d release=%s", npc:id(), expired and "held" or reason) end
         self.st.active = false
