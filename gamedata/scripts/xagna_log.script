@@ -50,6 +50,7 @@ function Logger:flush_repeat()
     self.repeat_count = 0
 end
 
+-- @novalidate(security.fs_access, reason:"xagna ships standalone, no xlibs; the logger's own log write is the sanctioned fs exception")
 function Logger:flush()
     self:flush_repeat()
     if #self.buffer == 0 then return end
